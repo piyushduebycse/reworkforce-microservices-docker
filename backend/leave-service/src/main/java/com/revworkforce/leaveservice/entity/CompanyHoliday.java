@@ -13,8 +13,10 @@ public class CompanyHoliday {
     private Long id;
     @Column(nullable = false)
     private String name;
-    @Column(nullable = false)
+    @Column(name = "holiday_date", nullable = false)
     private LocalDate date;
     private String description;
+    @Column(name = "holiday_type", length = 50)
+    private String holidayType; // NATIONAL, REGIONAL, OPTIONAL, COMPANY
     private boolean isRecurring;
 }

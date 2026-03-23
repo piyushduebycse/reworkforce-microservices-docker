@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -23,26 +23,36 @@ import { NotificationService } from '../../../core/services/notification.service
           <span>RevWorkforce</span>
         </div>
         <mat-nav-list>
-          <!-- Employee links -->
+          <!-- All users -->
           <a mat-list-item routerLink="/employee/dashboard" routerLinkActive="active">
             <mat-icon matListItemIcon>dashboard</mat-icon>
             <span matListItemTitle>Dashboard</span>
           </a>
-          <a mat-list-item routerLink="/leave/balance" routerLinkActive="active">
-            <mat-icon matListItemIcon>event_available</mat-icon>
-            <span matListItemTitle>Leave Balance</span>
+          <a mat-list-item routerLink="/directory" routerLinkActive="active">
+            <mat-icon matListItemIcon>contacts</mat-icon>
+            <span matListItemTitle>Directory</span>
           </a>
-          <a mat-list-item routerLink="/leave/apply" routerLinkActive="active">
-            <mat-icon matListItemIcon>add_circle</mat-icon>
-            <span matListItemTitle>Apply Leave</span>
-          </a>
-          <a mat-list-item routerLink="/leave/list" routerLinkActive="active">
-            <mat-icon matListItemIcon>list</mat-icon>
-            <span matListItemTitle>My Leaves</span>
-          </a>
+          <ng-container *ngIf="!isAdmin()">
+            <mat-divider></mat-divider>
+            <h3 matSubheader>Leave</h3>
+            <a mat-list-item routerLink="/leave/balance" routerLinkActive="active">
+              <mat-icon matListItemIcon>event_available</mat-icon>
+              <span matListItemTitle>My Balance</span>
+            </a>
+            <a mat-list-item routerLink="/leave/apply" routerLinkActive="active">
+              <mat-icon matListItemIcon>add_circle</mat-icon>
+              <span matListItemTitle>Apply Leave</span>
+            </a>
+            <a mat-list-item routerLink="/leave/list" routerLinkActive="active">
+              <mat-icon matListItemIcon>list</mat-icon>
+              <span matListItemTitle>My Leaves</span>
+            </a>
+          </ng-container>
+          <mat-divider></mat-divider>
+          <h3 matSubheader>Performance</h3>
           <a mat-list-item routerLink="/performance/reviews" routerLinkActive="active">
             <mat-icon matListItemIcon>star_rate</mat-icon>
-            <span matListItemTitle>Performance</span>
+            <span matListItemTitle>Reviews</span>
           </a>
           <a mat-list-item routerLink="/performance/goals" routerLinkActive="active">
             <mat-icon matListItemIcon>flag</mat-icon>
@@ -79,9 +89,17 @@ import { NotificationService } from '../../../core/services/notification.service
               <mat-icon matListItemIcon>apartment</mat-icon>
               <span matListItemTitle>Departments</span>
             </a>
+            <a mat-list-item routerLink="/admin/holidays" routerLinkActive="active">
+              <mat-icon matListItemIcon>calendar_month</mat-icon>
+              <span matListItemTitle>Holidays</span>
+            </a>
             <a mat-list-item routerLink="/admin/announcements" routerLinkActive="active">
               <mat-icon matListItemIcon>campaign</mat-icon>
               <span matListItemTitle>Announcements</span>
+            </a>
+            <a mat-list-item routerLink="/admin/leave-balances" routerLinkActive="active">
+              <mat-icon matListItemIcon>account_balance_wallet</mat-icon>
+              <span matListItemTitle>Leave Balances</span>
             </a>
           </ng-container>
         </mat-nav-list>
@@ -96,12 +114,13 @@ import { NotificationService } from '../../../core/services/notification.service
           <button mat-icon-button routerLink="/notifications" [matBadge]="unreadCount() || null" matBadgeColor="warn">
             <mat-icon>notifications</mat-icon>
           </button>
-          <button mat-button [matMenuTriggerFor]="userMenu">
+          <button mat-button [matMenuTriggerFor]="userMenu" class="user-btn">
             <mat-icon>account_circle</mat-icon>
-            {{ user?.firstName }} {{ user?.lastName }}
+            <span class="user-name">{{ user?.firstName }} {{ user?.lastName }}</span>
+            <span class="role-chip" [ngClass]="'role-' + (user?.role || '').toLowerCase()">{{ user?.role }}</span>
           </button>
           <mat-menu #userMenu="matMenu">
-            <button mat-menu-item routerLink="/employee/dashboard">
+            <button mat-menu-item routerLink="/profile">
               <mat-icon>person</mat-icon> Profile
             </button>
             <mat-divider></mat-divider>
@@ -130,6 +149,12 @@ import { NotificationService } from '../../../core/services/notification.service
     .spacer { flex: 1; }
     .main-content { padding: 24px; }
     .active { background: rgba(63, 81, 181, 0.1); color: #3f51b5; }
+    .user-btn { display: flex; align-items: center; gap: 6px; }
+    .user-name { font-size: 14px; }
+    .role-chip { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+    .role-admin { background: rgba(244,67,54,0.2); color: #f44336; }
+    .role-manager { background: rgba(255,152,0,0.2); color: #ff9800; }
+    .role-employee { background: rgba(76,175,80,0.2); color: #4caf50; }
   `]
 })
 export class LayoutComponent {
@@ -138,17 +163,10 @@ export class LayoutComponent {
   private router = inject(Router);
 
   user = this.authService.getCurrentUser();
-  unreadCount = signal(0);
+  unreadCount = this.notificationService.unreadCount;
 
   constructor() {
-    this.loadUnreadCount();
-  }
-
-  loadUnreadCount(): void {
-    this.notificationService.getUnreadCount().subscribe({
-      next: res => this.unreadCount.set(res.data || 0),
-      error: () => {}
-    });
+    this.notificationService.getUnreadCount().subscribe({ error: () => {} });
   }
 
   isAdmin(): boolean { return this.user?.role === 'ADMIN'; }

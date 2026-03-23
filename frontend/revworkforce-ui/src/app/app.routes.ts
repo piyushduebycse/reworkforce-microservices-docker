@@ -90,6 +90,28 @@ export const routes: Routes = [
         data: { roles: ['ADMIN'] }
       },
       {
+        path: 'admin/leave-balances',
+        loadComponent: () => import('./features/admin/leave-balance-admin/leave-balance-admin.component').then(m => m.LeaveBalanceAdminComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] }
+      },
+      {
+        path: 'admin/holidays',
+        loadComponent: () => import('./features/admin/holiday-management/holiday-management.component').then(m => m.HolidayManagementComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['ADMIN'] }
+      },
+      {
+        path: 'profile',
+        loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+        canActivate: [authGuard]
+      },
+      {
+        path: 'directory',
+        loadComponent: () => import('./features/directory/directory.component').then(m => m.DirectoryComponent),
+        canActivate: [authGuard]
+      },
+      {
         path: 'notifications',
         loadComponent: () => import('./features/notifications/notification-panel/notification-panel.component').then(m => m.NotificationPanelComponent),
         canActivate: [authGuard]

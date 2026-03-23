@@ -3,7 +3,9 @@ export interface LeaveType {
   name: string;
   description: string;
   isPaid: boolean;
+  paid?: boolean;
   isActive: boolean;
+  active?: boolean;
 }
 
 export interface LeaveBalance {

@@ -18,10 +18,30 @@ public class DepartmentController {
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<DepartmentDto>>> getAll() {
-        List<DepartmentDto> depts = departmentRepository.findByIsActiveTrue().stream()
+        List<DepartmentDto> depts = departmentRepository.findAll().stream()
             .map(d -> DepartmentDto.builder().id(d.getId()).name(d.getName()).description(d.getDescription()).headEmployeeId(d.getHeadEmployeeId()).isActive(d.isActive()).build())
             .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success("Departments", depts));
+    }
+
+    @PutMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<DepartmentDto>> activate(@PathVariable Long id) {
+        Department d = departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found: " + id));
+        d.setActive(true);
+        d = departmentRepository.save(d);
+        DepartmentDto result = DepartmentDto.builder().id(d.getId()).name(d.getName()).description(d.getDescription()).headEmployeeId(d.getHeadEmployeeId()).isActive(d.isActive()).build();
+        return ResponseEntity.ok(ApiResponse.success("Activated", result));
+    }
+
+    @PutMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<DepartmentDto>> deactivate(@PathVariable Long id) {
+        Department d = departmentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Department not found: " + id));
+        d.setActive(false);
+        d = departmentRepository.save(d);
+        DepartmentDto result = DepartmentDto.builder().id(d.getId()).name(d.getName()).description(d.getDescription()).headEmployeeId(d.getHeadEmployeeId()).isActive(d.isActive()).build();
+        return ResponseEntity.ok(ApiResponse.success("Deactivated", result));
     }
 
     @PostMapping

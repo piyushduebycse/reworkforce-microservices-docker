@@ -57,14 +57,15 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException("Email already in use: " + request.getEmail());
         }
-        String employeeId = generateEmployeeId();
+        Role role = request.getRole() != null ? request.getRole() : Role.EMPLOYEE;
+        String employeeId = generateEmployeeId(role);
         User user = User.builder()
                 .employeeId(employeeId)
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
-                .role(request.getRole() != null ? request.getRole() : Role.EMPLOYEE)
+                .role(role)
                 .managerId(request.getManagerId())
                 .departmentId(request.getDepartmentId())
                 .designationId(request.getDesignationId())
@@ -209,6 +210,33 @@ public class UserServiceImpl implements UserService {
         }
         stats.put("byRole", byRole);
         return stats;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserDto> getUsersByRole(Role role) {
+        return userRepository.findByRoleAndIsActiveTrue(role).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public void activateUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+        user.setActive(true);
+        userRepository.save(user);
+    }
+
+    private String generateEmployeeId(Role role) {
+        if (role == Role.ADMIN) {
+            Integer maxNum = userRepository.findMaxAdmIdNumber();
+            return String.format("ADM-%03d", (maxNum == null ? 0 : maxNum) + 1);
+        } else if (role == Role.MANAGER) {
+            Integer maxNum = userRepository.findMaxMgrIdNumber();
+            return String.format("MGR-%03d", (maxNum == null ? 0 : maxNum) + 1);
+        } else {
+            Integer maxNum = userRepository.findMaxEmployeeIdNumber();
+            return String.format("EMP-%03d", (maxNum == null ? 0 : maxNum) + 1);
+        }
     }
 
     private String generateEmployeeId() {

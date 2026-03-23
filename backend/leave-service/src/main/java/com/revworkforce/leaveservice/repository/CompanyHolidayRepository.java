@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface CompanyHolidayRepository extends JpaRepository<CompanyHoliday, Long> {
     List<CompanyHoliday> findByDateBetweenOrderByDate(LocalDate start, LocalDate end);
+    List<CompanyHoliday> findAllByOrderByDateAsc();
+    List<CompanyHoliday> findByDateAfterOrderByDate(LocalDate date);
 }

@@ -34,4 +34,20 @@ export class UserService {
   deactivateUser(id: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.api}/users/${id}`);
   }
+
+  activateUser(id: number): Observable<ApiResponse<void>> {
+    return this.http.put<ApiResponse<void>>(`${this.api}/users/${id}/activate`, {});
+  }
+
+  getUsersByRole(role: 'EMPLOYEE' | 'MANAGER' | 'ADMIN'): Observable<ApiResponse<User[]>> {
+    return this.http.get<ApiResponse<User[]>>(`${this.api}/users/by-role?role=${role}`);
+  }
+
+  getMyProfile(): Observable<ApiResponse<User>> {
+    return this.http.get<ApiResponse<User>>(`${this.api}/profiles/me`);
+  }
+
+  updateMyProfile(data: Partial<User>): Observable<ApiResponse<User>> {
+    return this.http.put<ApiResponse<User>>(`${this.api}/profiles/me`, data);
+  }
 }

@@ -46,4 +46,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u.role, COUNT(u) FROM User u WHERE u.isActive = true GROUP BY u.role")
     List<Object[]> countActiveByRole();
+
+    List<User> findByRoleAndIsActiveTrue(Role role);
+
+    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(u.employeeId, 5) AS int)), 0) FROM User u WHERE u.employeeId LIKE 'MGR-%'")
+    Integer findMaxMgrIdNumber();
+
+    @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(u.employeeId, 5) AS int)), 0) FROM User u WHERE u.employeeId LIKE 'ADM-%'")
+    Integer findMaxAdmIdNumber();
 }

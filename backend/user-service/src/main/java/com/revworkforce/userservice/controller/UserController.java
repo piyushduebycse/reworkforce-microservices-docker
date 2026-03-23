@@ -1,6 +1,7 @@
 package com.revworkforce.userservice.controller;
 
 import com.revworkforce.userservice.dto.*;
+import com.revworkforce.userservice.entity.Role;
 import com.revworkforce.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -85,5 +86,18 @@ public class UserController {
                                                                  @RequestBody UpdateProfileRequest request) {
         return ResponseEntity.ok(ApiResponse.<UserDto>builder()
                 .success(true).message("Profile updated").data(userService.updateProfile(userDetails.getUsername(), request)).statusCode(200).build());
+    }
+
+    @GetMapping("/users/by-role")
+    public ResponseEntity<ApiResponse<List<UserDto>>> getUsersByRole(@RequestParam Role role) {
+        return ResponseEntity.ok(ApiResponse.<List<UserDto>>builder()
+                .success(true).message("Users by role").data(userService.getUsersByRole(role)).statusCode(200).build());
+    }
+
+    @PutMapping("/users/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> activateUser(@PathVariable Long id) {
+        userService.activateUser(id);
+        return ResponseEntity.ok(ApiResponse.<Void>builder().success(true).message("User activated").statusCode(200).build());
     }
 }

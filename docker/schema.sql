@@ -86,10 +86,11 @@ CREATE TABLE IF NOT EXISTS leave_applications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS company_holidays (
-    id          BIGINT       NOT NULL AUTO_INCREMENT,
-    name        VARCHAR(200) NOT NULL,
-    holiday_date DATE        NOT NULL UNIQUE,
-    description VARCHAR(500),
+    id           BIGINT       NOT NULL AUTO_INCREMENT,
+    name         VARCHAR(200) NOT NULL,
+    holiday_date DATE         NOT NULL UNIQUE,
+    description  VARCHAR(500),
+    is_recurring TINYINT(1)   NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
     INDEX idx_ch_date (holiday_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -113,16 +114,43 @@ INSERT IGNORE INTO leave_types (name, description, is_paid, is_active) VALUES
     ('Maternity Leave', 'Maternity leave for female employees',        1, 1),
     ('Unpaid Leave',    'Leave without pay when balance is exhausted', 0, 1);
 
--- Seed company holidays (current year)
-INSERT IGNORE INTO company_holidays (name, holiday_date, description) VALUES
-    ('New Year Day',          '2025-01-01', 'New Year celebration'),
-    ('Republic Day',          '2025-01-26', 'National holiday'),
-    ('Holi',                  '2025-03-14', 'Festival of Colors'),
-    ('Good Friday',           '2025-04-18', 'Good Friday'),
-    ('Independence Day',      '2025-08-15', 'National Independence Day'),
-    ('Gandhi Jayanti',        '2025-10-02', 'Birthday of Mahatma Gandhi'),
-    ('Diwali',                '2025-10-20', 'Festival of Lights'),
-    ('Christmas Day',         '2025-12-25', 'Christmas celebration');
+-- Seed leave balances for all users (users 1-8) for current year
+-- Leave type IDs: 1=Annual, 2=Sick, 3=Casual, 4=Maternity, 5=Unpaid
+INSERT IGNORE INTO leave_balances (user_id, leave_type_id, total_days, used_days, year) VALUES
+    (1,1,18,0,2026),(1,2,12,0,2026),(1,3,6,0,2026),
+    (2,1,18,0,2026),(2,2,12,0,2026),(2,3,6,0,2026),
+    (3,1,18,0,2026),(3,2,12,0,2026),(3,3,6,0,2026),
+    (4,1,18,0,2026),(4,2,12,0,2026),(4,3,6,0,2026),
+    (5,1,18,0,2026),(5,2,12,0,2026),(5,3,6,0,2026),
+    (6,1,18,0,2026),(6,2,12,0,2026),(6,3,6,0,2026),
+    (7,1,18,0,2026),(7,2,12,0,2026),(7,3,6,0,2026),
+    (8,1,18,0,2026),(8,2,12,0,2026),(8,3,6,0,2026);
+
+-- Seed company holidays
+INSERT IGNORE INTO company_holidays (name, holiday_date, description, holiday_type, is_recurring) VALUES
+    ('New Year Day',          '2025-01-01', 'New Year celebration',       'NATIONAL', 1),
+    ('Republic Day',          '2025-01-26', 'National holiday',           'NATIONAL', 1),
+    ('Holi',                  '2025-03-14', 'Festival of Colors',         'NATIONAL', 1),
+    ('Good Friday',           '2025-04-18', 'Good Friday',                'NATIONAL', 0),
+    ('Independence Day',      '2025-08-15', 'National Independence Day',  'NATIONAL', 1),
+    ('Gandhi Jayanti',        '2025-10-02', 'Birthday of Mahatma Gandhi', 'NATIONAL', 1),
+    ('Diwali',                '2025-10-20', 'Festival of Lights',         'NATIONAL', 1),
+    ('Christmas Day',         '2025-12-25', 'Christmas celebration',      'NATIONAL', 1),
+    -- 2026 holidays
+    ('Holi',                  '2026-03-24', 'Festival of Colors',         'NATIONAL', 1),
+    ('Good Friday',           '2026-04-03', 'Good Friday',                'NATIONAL', 0),
+    ('Eid ul-Fitr',           '2026-04-01', 'Eid ul-Fitr',                'NATIONAL', 0),
+    ('Dr. Ambedkar Jayanti',  '2026-04-14', 'National holiday',           'NATIONAL', 1),
+    ('Ram Navami',            '2026-04-26', 'Hindu festival',             'NATIONAL', 0),
+    ('Maharashtra Day',       '2026-05-01', 'Maharashtra Day',            'REGIONAL', 1),
+    ('Independence Day',      '2026-08-15', 'National Independence Day',  'NATIONAL', 1),
+    ('Ganesh Chaturthi',      '2026-08-27', 'Festival',                   'NATIONAL', 0),
+    ('Gandhi Jayanti',        '2026-10-02', 'Birthday of Mahatma Gandhi', 'NATIONAL', 1),
+    ('Dussehra',              '2026-10-20', 'Festival',                   'NATIONAL', 0),
+    ('Diwali',                '2026-11-08', 'Festival of Lights',         'NATIONAL', 1),
+    ('Diwali Holiday',        '2026-11-09', 'Diwali company holiday',     'COMPANY',  0),
+    ('Christmas Day',         '2026-12-25', 'Christmas celebration',      'NATIONAL', 1),
+    ('New Year Eve',          '2026-12-31', 'Company holiday',            'COMPANY',  0);
 
 
 -- =============================================================================

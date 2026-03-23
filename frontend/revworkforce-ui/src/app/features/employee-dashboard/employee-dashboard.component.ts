@@ -9,6 +9,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { LeaveService } from '../../core/services/leave.service';
 import { PerformanceService } from '../../core/services/performance.service';
 import { AuthService } from '../../core/services/auth.service';
+import { EmployeeManagementService } from '../../core/services/employee-management.service';
 import { LeaveBalance, LeaveApplication } from '../../core/models/leave.model';
 import { Goal } from '../../core/models/performance.model';
 
@@ -73,6 +74,42 @@ import { Goal } from '../../core/models/performance.model';
       </mat-card>
       <p *ngIf="activeGoals.length === 0" class="empty-state">No active goals</p>
     </div>
+
+    <!-- Upcoming Holidays -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Upcoming Holidays</h2>
+        <span class="holiday-year">{{ currentYear }}</span>
+      </div>
+      <mat-card *ngFor="let h of upcomingHolidays" class="list-card">
+        <mat-card-content>
+          <div class="list-item">
+            <div>
+              <strong>{{ h.name }}</strong>
+              <p class="date-range">{{ h.date | date:'fullDate' }}</p>
+            </div>
+            <span class="type-badge type-{{ h.holidayType?.toLowerCase() }}">{{ h.holidayType || 'COMPANY' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+      <p *ngIf="upcomingHolidays.length === 0" class="empty-state">No upcoming holidays</p>
+    </div>
+
+    <!-- Announcements -->
+    <div class="section" *ngIf="announcements.length > 0">
+      <div class="section-header">
+        <h2>Announcements</h2>
+      </div>
+      <mat-card *ngFor="let a of announcements" class="announcement-card">
+        <mat-card-content>
+          <div class="announce-header">
+            <strong>{{ a.title }}</strong>
+            <span class="announce-date">{{ a.createdAt | date:'dd MMM yyyy' }}</span>
+          </div>
+          <p class="announce-body">{{ a.content }}</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
   `,
   styles: [`
     h2 { margin: 24px 0 16px; font-size: 18px; color: #333; }
@@ -89,17 +126,31 @@ import { Goal } from '../../core/models/performance.model';
     .goal-status { color: #666; font-size: 13px; margin: 4px 0; }
     .progress-text { font-size: 12px; color: #666; }
     .empty-state { color: #999; text-align: center; padding: 24px; }
+    .type-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+    .holiday-year { font-size: 13px; color: #999; }
+    .type-national { background: #e3f2fd; color: #1565c0; }
+    .type-regional { background: #e8f5e9; color: #2e7d32; }
+    .type-optional { background: #fff9c4; color: #f57f17; }
+    .type-company { background: #f3e5f5; color: #6a1b9a; }
+    .announcement-card { margin-bottom: 8px; border-left: 4px solid #1976d2; }
+    .announce-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .announce-date { font-size: 12px; color: #888; }
+    .announce-body { color: #444; font-size: 14px; margin: 0; line-height: 1.5; }
   `]
 })
 export class EmployeeDashboardComponent implements OnInit {
   private leaveService = inject(LeaveService);
   private performanceService = inject(PerformanceService);
   private authService = inject(AuthService);
+  private empMgmtService = inject(EmployeeManagementService);
 
   user = this.authService.getCurrentUser();
   leaveBalances: LeaveBalance[] = [];
   recentApplications: LeaveApplication[] = [];
   activeGoals: Goal[] = [];
+  upcomingHolidays: any[] = [];
+  announcements: any[] = [];
+  currentYear = new Date().getFullYear();
 
   ngOnInit(): void {
     this.loadData();
@@ -109,6 +160,14 @@ export class EmployeeDashboardComponent implements OnInit {
     this.leaveService.getMyBalances().subscribe({ next: r => this.leaveBalances = r.data || [], error: () => {} });
     this.leaveService.getMyApplications().subscribe({ next: r => this.recentApplications = (r.data || []).slice(0, 3), error: () => {} });
     this.performanceService.getMyGoals().subscribe({ next: r => this.activeGoals = (r.data || []).filter(g => g.status !== 'CANCELLED').slice(0, 3), error: () => {} });
+    this.empMgmtService.getUpcomingHolidays().subscribe({ next: r => this.upcomingHolidays = (r.data || []).slice(0, 5), error: () => {} });
+    this.empMgmtService.getAnnouncements().subscribe({ next: r => {
+      const userRole = this.user?.role || '';
+      this.announcements = (r.data || []).filter((a: any) =>
+        a.active !== false &&
+        (a.targetRole === 'ALL' || a.targetRole === userRole)
+      ).slice(0, 5);
+    }, error: () => {} });
   }
 
   getUsagePercent(balance: LeaveBalance): number {

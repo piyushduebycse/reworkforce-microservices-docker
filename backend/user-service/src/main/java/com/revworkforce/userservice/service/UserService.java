@@ -23,4 +23,6 @@ public interface UserService {
     UserDto getUserByIdInternal(Long id);
     List<UserDto> getUsersByIds(List<Long> ids);
     java.util.Map<String, Object> getUserStats();
+    List<UserDto> getUsersByRole(com.revworkforce.userservice.entity.Role role);
+    void activateUser(Long id);
 }

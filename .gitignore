@@ -1,0 +1,23 @@
+# Maven build outputs
+**/target/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Node / Angular
+**/node_modules/
+frontend/revworkforce-ui/.angular/
+frontend/revworkforce-ui/dist/
+frontend/revworkforce-ui/package-lock.json
+docker/package-lock.json
+
+# Logs
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

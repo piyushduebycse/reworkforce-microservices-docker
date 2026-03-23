@@ -1,6 +1,3 @@
-
-
-
 # RevWorkforce — Cloud-Native HRM Platform
 
 A production-grade **Human Resource Management System** built with **Spring Boot 3 microservices**, **Angular 17**, and **Spring Cloud** infrastructure. Designed to demonstrate real-world enterprise architecture patterns.
@@ -350,10 +347,10 @@ docker compose logs -f
 # Wait until you see: "Started UserServiceApplication", etc.
 ```
 
-**Step 4 — Monitor startup progress**
+**Step 4 — Initialize schema and seed data**
 ```bash
-docker compose logs -f
-# Wait until you see "Started *Application" for each service (~3-5 min first time)
+# Apply full schema (optional — JPA auto-creates tables)
+docker exec -i revworkforce-mysql mysql -uroot -proot < schema.sql
 ```
 
 **Step 5 — Access the application**
@@ -528,9 +525,9 @@ Seeded automatically when running with `spring.profiles.active=dev`:
 | **ADMIN** | admin@revworkforce.com | Admin@123 | All features, user management, reports |
 | **MANAGER** | manager1@revworkforce.com | Manager@123 | Approve leaves, add review feedback, view team |
 | **MANAGER** | manager2@revworkforce.com | Manager@123 | Same as above |
-| **EMPLOYEE** | employee1@revworkforce.com | Employee@123 | Apply leave, self-review, goals |
-| **EMPLOYEE** | employee2@revworkforce.com | Employee@123 | Same as above |
-| **EMPLOYEE** | employee3@revworkforce.com | Employee@123 | Same as above |
+| **EMPLOYEE** | emp1@revworkforce.com | Employee@123 | Apply leave, self-review, goals |
+| **EMPLOYEE** | emp2@revworkforce.com | Employee@123 | Same as above |
+| **EMPLOYEE** | emp3@revworkforce.com | Employee@123 | Same as above |
 
 ---
 
@@ -626,211 +623,6 @@ mvn test
 ### Closing Statement
 
 > *"Every layer here maps to a real production concern — centralized config for operations, circuit breakers for resilience, JWT propagation for security, database isolation for independent deployability, and role-based guards for compliance. I can walk through any service end-to-end from the HTTP request to the DB write and back."*
-
----
-
----
-
-## Troubleshooting — First-Time Setup Errors
-
-### Docker Issues
-
----
-
-#### Error: `COPY target/*.jar app.jar` — file not found / build fails immediately
-
-**Cause:** Old Dockerfiles expected a pre-built JAR. Now fixed with multi-stage builds — no manual Maven step needed.
-
-**Fix:** Pull the latest code and re-run:
-```bash
-cd E:\RevWorkforce\docker
-docker compose up --build
-```
-
----
-
-#### Error: `error response from daemon: ... port is already allocated`
-
-**Cause:** A port (3306, 8080, 8761, etc.) is already in use on your machine.
-
-**Fix:** Find and stop the conflicting process:
-```bash
-# Windows — find what's using port 3306
-netstat -ano | findstr :3306
-taskkill /PID <pid> /F
-
-# Or change the port in docker-compose.yml (left side of "x:y")
-# e.g., change "3306:3306" to "3307:3306"
-```
-
----
-
-#### Error: `error response from daemon: ... no space left on device`
-
-**Cause:** Docker has run out of disk space from old images/containers.
-
-**Fix:**
-```bash
-docker system prune -af --volumes
-```
-> Warning: this removes all stopped containers, dangling images, and unused volumes.
-
----
-
-#### Error: Services start then immediately exit / restart loop
-
-**Cause:** Usually Config Server or Eureka is not ready when a dependent service starts.
-
-**Fix:** Wait for Eureka and Config Server to be fully healthy before other services start. Check logs:
-```bash
-docker compose logs service-discovery
-docker compose logs config-server
-```
-If they're stuck, restart just those two first:
-```bash
-docker compose up service-discovery config-server -d
-# Wait ~60 seconds, then start everything
-docker compose up -d
-```
-
----
-
-#### Error: `Unable to connect to MySQL` / user-service keeps restarting
-
-**Cause:** MySQL container is still initializing when the service tries to connect.
-
-**Fix:** MySQL has a health check with `start_period: 30s`. If it still fails:
-```bash
-# Check MySQL is actually healthy
-docker inspect revworkforce-mysql | grep -i health
-
-# Wait until Status is "healthy", then start services
-docker compose up user-service leave-service performance-service employee-management-service -d
-```
-
----
-
-#### Error: `docker compose` not found (only `docker-compose` works)
-
-**Cause:** Older Docker Desktop version uses `docker-compose` (v1) instead of `docker compose` (v2).
-
-**Fix:** Either update Docker Desktop to 4.x+, or use:
-```bash
-docker-compose up --build
-```
-
----
-
-#### Error: Frontend shows blank page / `ERR_CONNECTION_REFUSED` on http://localhost:4200
-
-**Cause:** Frontend container started before API Gateway was ready, or Angular build failed.
-
-**Fix:**
-```bash
-# Check frontend container logs
-docker compose logs frontend
-
-# Rebuild only the frontend
-docker compose up frontend --build -d
-```
-
----
-
-#### Error: `Out of memory` / Maven build kills during `docker compose up --build`
-
-**Cause:** Docker Desktop default memory (2 GB) is too low for building 9 Spring Boot services.
-
-**Fix:** In Docker Desktop → Settings → Resources → Memory: set to **at least 6 GB**.
-
----
-
-### Local Run Issues
-
----
-
-#### Error: `Could not connect to config server` — service fails to start
-
-**Cause:** Config Server isn't running yet, or Eureka isn't up.
-
-**Fix:** Always start services in this order:
-1. MySQL
-2. `service-discovery` → wait for http://localhost:8761
-3. `config-server` → wait for http://localhost:8888
-4. Business services (user, leave, etc.)
-5. `api-gateway`
-6. Frontend
-
----
-
-#### Error: `Access denied for user 'root'@'localhost'` (MySQL)
-
-**Cause:** MySQL password mismatch. The app expects password `revworkforce@123`.
-
-**Fix:** Either reset the MySQL root password or override via env variable:
-```bash
-mvn spring-boot:run -Dspring-boot.run.jvmArguments="-DSPRING_DATASOURCE_PASSWORD=yourpassword"
-```
-
----
-
-#### Error: `Port 8081 already in use`
-
-**Cause:** Another instance of the service is already running.
-
-**Fix:**
-```bash
-# Windows
-netstat -ano | findstr :8081
-taskkill /PID <pid> /F
-```
-
----
-
-#### Error: Leave balance not found when applying leave
-
-**Cause:** Leave balances are seeded only for user IDs 1–8 (dev profile). If you registered new users (IDs 9+), they won't have balances.
-
-**Fix:** Insert balances manually or log in as one of the seeded users (employee1–5@revworkforce.com).
-
----
-
-#### Error: `No active review cycle` when creating a performance review
-
-**Cause:** Review cycles are seeded by the performance-service DataInitializer (dev profile only). If running without `dev` profile, no cycles exist.
-
-**Fix:** Ensure `SPRING_PROFILES_ACTIVE=dev` is set, or manually create a cycle via:
-```bash
-curl -X POST http://localhost:8080/api/performance/cycles \
-  -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Q1 2026","startDate":"2026-01-01","endDate":"2026-03-31"}'
-```
-
----
-
-#### Error: Reporting dashboard shows zeros
-
-**Cause:** The reporting service calls user-service, leave-service, and performance-service via Feign. If any of those services is down or hasn't started yet, stats default to 0.
-
-**Fix:** Ensure all services are running and registered in Eureka (http://localhost:8761). Then refresh the dashboard.
-
----
-
-#### Angular: `ng: command not found`
-
-**Fix:**
-```bash
-npm install -g @angular/cli
-```
-
----
-
-#### Maven: `mvn: command not found`
-
-**Fix:** Install Maven from https://maven.apache.org/download.cgi and add to PATH, or use the Maven wrapper:
-```bash
-./mvnw spring-boot:run
-```
 
 ---
 

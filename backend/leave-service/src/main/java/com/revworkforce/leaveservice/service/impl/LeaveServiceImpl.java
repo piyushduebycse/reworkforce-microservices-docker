@@ -85,6 +85,91 @@ public class LeaveServiceImpl implements LeaveService {
     }
 
     @Override
+    public LeaveBalanceDto setLeaveBalance(Long userId, Long leaveTypeId, int totalDays, int year) {
+        LeaveBalance balance = leaveBalanceRepository
+                .findByUserIdAndLeaveTypeIdAndYear(userId, leaveTypeId, year)
+                .orElse(LeaveBalance.builder().userId(userId).leaveTypeId(leaveTypeId).year(year).usedDays(0).build());
+        balance.setTotalDays(totalDays);
+        balance = leaveBalanceRepository.save(balance);
+        LeaveType lt = leaveTypeRepository.findById(leaveTypeId).orElse(null);
+        return LeaveBalanceDto.builder()
+                .id(balance.getId()).userId(balance.getUserId()).leaveTypeId(balance.getLeaveTypeId())
+                .leaveTypeName(lt != null ? lt.getName() : "Unknown")
+                .totalDays(balance.getTotalDays()).usedDays(balance.getUsedDays())
+                .remainingDays(balance.getRemainingDays()).year(balance.getYear()).build();
+    }
+
+    @Override
+    public int initializeBalances(List<Long> userIds, List<com.revworkforce.leaveservice.dto.LeaveBalanceSetRequest.TypeDefault> defaults, int year) {
+        int count = 0;
+        for (Long userId : userIds) {
+            for (com.revworkforce.leaveservice.dto.LeaveBalanceSetRequest.TypeDefault d : defaults) {
+                boolean exists = leaveBalanceRepository.findByUserIdAndLeaveTypeIdAndYear(userId, d.getLeaveTypeId(), year).isPresent();
+                if (!exists) {
+                    leaveBalanceRepository.save(LeaveBalance.builder()
+                            .userId(userId).leaveTypeId(d.getLeaveTypeId())
+                            .totalDays(d.getTotalDays()).usedDays(0).year(year).build());
+                }
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public int initUserBalancesFromQuota(Long userId, String role, int year) {
+        List<com.revworkforce.leaveservice.entity.LeaveQuota> quotas = leaveQuotaRepository.findByYear(year).stream()
+                .filter(q -> q.getRole().equalsIgnoreCase(role)).collect(Collectors.toList());
+        if (quotas.isEmpty()) {
+            // Fall back to any year quota for this role
+            quotas = leaveQuotaRepository.findAll().stream()
+                    .filter(q -> q.getRole().equalsIgnoreCase(role)).collect(Collectors.toList());
+        }
+        int count = 0;
+        for (com.revworkforce.leaveservice.entity.LeaveQuota q : quotas) {
+            boolean exists = leaveBalanceRepository.findByUserIdAndLeaveTypeIdAndYear(userId, q.getLeaveTypeId(), year).isPresent();
+            if (!exists) {
+                leaveBalanceRepository.save(LeaveBalance.builder()
+                        .userId(userId).leaveTypeId(q.getLeaveTypeId()).totalDays(q.getTotalDays()).usedDays(0).year(year).build());
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.revworkforce.leaveservice.dto.LeaveQuotaDto> getQuotas(int year) {
+        return leaveQuotaRepository.findByYear(year).stream().map(q -> {
+            LeaveType lt = leaveTypeRepository.findById(q.getLeaveTypeId()).orElse(null);
+            return com.revworkforce.leaveservice.dto.LeaveQuotaDto.builder()
+                    .id(q.getId()).leaveTypeId(q.getLeaveTypeId())
+                    .leaveTypeName(lt != null ? lt.getName() : "Unknown")
+                    .role(q.getRole()).totalDays(q.getTotalDays()).year(q.getYear()).build();
+        }).collect(Collectors.toList());
+    }
+
+    @Override
+    public com.revworkforce.leaveservice.dto.LeaveQuotaDto upsertQuota(com.revworkforce.leaveservice.dto.LeaveQuotaDto dto) {
+        com.revworkforce.leaveservice.entity.LeaveQuota quota = leaveQuotaRepository
+                .findByLeaveTypeIdAndRoleAndYear(dto.getLeaveTypeId(), dto.getRole(), dto.getYear())
+                .orElse(com.revworkforce.leaveservice.entity.LeaveQuota.builder()
+                        .leaveTypeId(dto.getLeaveTypeId()).role(dto.getRole()).year(dto.getYear()).build());
+        quota.setTotalDays(dto.getTotalDays());
+        quota = leaveQuotaRepository.save(quota);
+        LeaveType lt = leaveTypeRepository.findById(quota.getLeaveTypeId()).orElse(null);
+        return com.revworkforce.leaveservice.dto.LeaveQuotaDto.builder()
+                .id(quota.getId()).leaveTypeId(quota.getLeaveTypeId())
+                .leaveTypeName(lt != null ? lt.getName() : "Unknown")
+                .role(quota.getRole()).totalDays(quota.getTotalDays()).year(quota.getYear()).build();
+    }
+
+    @Override
+    public void deleteQuota(Long id) {
+        leaveQuotaRepository.deleteById(id);
+    }
+
+    @Override
     public LeaveApplicationDto applyLeave(Long userId, Long managerId, LeaveApplicationRequest request) {
         // Resolve manager ID from user-service if not provided
         Long resolvedManagerId = managerId;
@@ -291,6 +376,55 @@ public class LeaveServiceImpl implements LeaveService {
             current = current.plusDays(1);
         }
         return days;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CompanyHolidayDto> getAllHolidays() {
+        return companyHolidayRepository.findAllByOrderByDateAsc().stream().map(this::toHolidayDto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CompanyHolidayDto> getUpcomingHolidays() {
+        return companyHolidayRepository.findByDateAfterOrderByDate(LocalDate.now().minusDays(1))
+                .stream().limit(10).map(this::toHolidayDto).collect(Collectors.toList());
+    }
+
+    @Override
+    public CompanyHolidayDto createHoliday(CompanyHolidayDto dto) {
+        CompanyHoliday h = CompanyHoliday.builder()
+                .name(dto.getName()).date(dto.getDate())
+                .description(dto.getDescription())
+                .holidayType(dto.getHolidayType() != null ? dto.getHolidayType() : "COMPANY")
+                .isRecurring(dto.isRecurring()).build();
+        return toHolidayDto(companyHolidayRepository.save(h));
+    }
+
+    @Override
+    public CompanyHolidayDto updateHoliday(Long id, CompanyHolidayDto dto) {
+        CompanyHoliday h = companyHolidayRepository.findById(id)
+                .orElseThrow(() -> new com.revworkforce.leaveservice.exception.ResourceNotFoundException("Holiday not found: " + id));
+        if (dto.getName() != null) h.setName(dto.getName());
+        if (dto.getDate() != null) h.setDate(dto.getDate());
+        if (dto.getDescription() != null) h.setDescription(dto.getDescription());
+        if (dto.getHolidayType() != null) h.setHolidayType(dto.getHolidayType());
+        h.setRecurring(dto.isRecurring());
+        return toHolidayDto(companyHolidayRepository.save(h));
+    }
+
+    @Override
+    public void deleteHoliday(Long id) {
+        companyHolidayRepository.findById(id)
+                .orElseThrow(() -> new com.revworkforce.leaveservice.exception.ResourceNotFoundException("Holiday not found: " + id));
+        companyHolidayRepository.deleteById(id);
+    }
+
+    private CompanyHolidayDto toHolidayDto(CompanyHoliday h) {
+        return CompanyHolidayDto.builder()
+                .id(h.getId()).name(h.getName()).date(h.getDate())
+                .description(h.getDescription()).holidayType(h.getHolidayType())
+                .isRecurring(h.isRecurring()).build();
     }
 
     private LeaveTypeDto toLeaveTypeDto(LeaveType lt) {

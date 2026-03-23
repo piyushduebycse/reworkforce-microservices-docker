@@ -3,23 +3,27 @@ package com.revworkforce.performanceservice.service.impl;
 import com.revworkforce.performanceservice.dto.*;
 import com.revworkforce.performanceservice.entity.*;
 import com.revworkforce.performanceservice.exception.*;
+import com.revworkforce.performanceservice.feign.UserServiceClient;
 import com.revworkforce.performanceservice.repository.*;
 import com.revworkforce.performanceservice.service.PerformanceService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-@Service @RequiredArgsConstructor @Transactional
+@Service @RequiredArgsConstructor @Transactional @Slf4j
 public class PerformanceServiceImpl implements PerformanceService {
 
     private final PerformanceReviewRepository reviewRepository;
     private final ReviewCycleRepository cycleRepository;
     private final GoalRepository goalRepository;
+    private final UserServiceClient userServiceClient;
 
     @Override @Transactional(readOnly = true)
     public List<ReviewDto> getActiveCycles() {
@@ -36,12 +40,29 @@ public class PerformanceServiceImpl implements PerformanceService {
         return ReviewDto.builder().id(cycle.getId()).selfComments(cycle.getName()).build();
     }
 
+    private Long resolveManagerId(Long userId) {
+        try {
+            Map<String, Object> response = userServiceClient.getUserById(userId);
+            if (response != null && response.containsKey("data")) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> data = (Map<String, Object>) response.get("data");
+                Object mid = data.get("managerId");
+                if (mid instanceof Number) return ((Number) mid).longValue();
+            }
+        } catch (Exception e) {
+            log.warn("Could not resolve managerId for user {}: {}", userId, e.getMessage());
+        }
+        return null;
+    }
+
     @Override
     public ReviewDto createReview(Long employeeId, ReviewRequest request) {
+        Long managerId = resolveManagerId(employeeId);
         PerformanceReview review = PerformanceReview.builder()
-            .employeeId(employeeId).selfRating(request.getSelfRating())
+            .employeeId(employeeId).managerId(managerId)
+            .selfRating(request.getSelfRating())
             .selfComments(request.getSelfComments()).reviewCycleId(request.getReviewCycleId())
-            .status(ReviewStatus.DRAFT).build();
+            .status(ReviewStatus.SUBMITTED).submittedAt(LocalDateTime.now()).build();
         return toReviewDto(reviewRepository.save(review));
     }
 
@@ -83,8 +104,9 @@ public class PerformanceServiceImpl implements PerformanceService {
 
     @Override
     public GoalDto createGoal(Long employeeId, Long managerId, GoalRequest request) {
-        Goal goal = Goal.builder().employeeId(employeeId).managerId(managerId)
-            .title(request.getTitle()).description(request.getDescription())
+        Long resolvedManagerId = managerId != null ? managerId : resolveManagerId(employeeId);
+        Goal goal = Goal.builder().employeeId(employeeId).managerId(resolvedManagerId)
+            .title(request.getTitle()).description(request.getDescription() != null ? request.getDescription() : "")
             .targetDate(request.getTargetDate()).reviewCycleId(request.getReviewCycleId())
             .status(GoalStatus.PENDING).progress(0).build();
         return toGoalDto(goalRepository.save(goal));
