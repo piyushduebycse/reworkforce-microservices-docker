@@ -1,0 +1,240 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: revworkforce-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: revworkforce@123
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./schema.sql:/docker-entrypoint-initdb.d/02-schema.sql
+    networks:
+      - revworkforce-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prevworkforce@123"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+
+  service-discovery:
+    build:
+      context: ../backend/service-discovery
+      dockerfile: Dockerfile
+    container_name: revworkforce-service-discovery
+    ports:
+      - "8761:8761"
+    networks:
+      - revworkforce-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  config-server:
+    build:
+      context: ../backend/config-server
+      dockerfile: Dockerfile
+    container_name: revworkforce-config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+    networks:
+      - revworkforce-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ../backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: revworkforce-api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+    networks:
+      - revworkforce-net
+
+  user-service:
+    build:
+      context: ../backend/user-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-user-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_users_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  leave-service:
+    build:
+      context: ../backend/leave-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-leave-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_leaves_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  performance-service:
+    build:
+      context: ../backend/performance-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-performance-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_performance_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  employee-management-service:
+    build:
+      context: ../backend/employee-management-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-employee-management
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_employee_mgmt_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  reporting-service:
+    build:
+      context: ../backend/reporting-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-reporting-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_reporting_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  notification-service:
+    build:
+      context: ../backend/notification-service
+      dockerfile: Dockerfile
+    container_name: revworkforce-notification-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      service-discovery:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revworkforce_notifications_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=revworkforce@123
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - revworkforce-net
+
+  frontend:
+    build:
+      context: ../frontend/revworkforce-ui
+      dockerfile: Dockerfile
+    container_name: revworkforce-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - revworkforce-net
+
+networks:
+  revworkforce-net:
+    driver: bridge
+
+volumes:
+  mysql_data:

@@ -1,0 +1,80 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$primary: mat.define-palette(mat.$indigo-palette);
+$accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+$warn: mat.define-palette(mat.$red-palette);
+
+$theme: mat.define-light-theme((
+  color: (primary: $primary, accent: $accent, warn: $warn),
+  typography: mat.define-typography-config(),
+  density: 0,
+));
+
+@include mat.all-component-themes($theme);
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.page-header {
+  margin-bottom: 24px;
+  h1 { font-size: 24px; font-weight: 500; color: #333; }
+  p { color: #666; margin-top: 4px; }
+}
+
+.card-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  padding: 20px;
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    .icon { font-size: 40px; width: 40px; height: 40px; color: #3f51b5; }
+    .value { font-size: 32px; font-weight: 700; color: #333; }
+    .label { font-size: 14px; color: #666; }
+  }
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  &.pending { background: #fff3e0; color: #e65100; }
+  &.approved { background: #e8f5e9; color: #2e7d32; }
+  &.rejected { background: #ffebee; color: #c62828; }
+  &.cancelled { background: #f3e5f5; color: #6a1b9a; }
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.mt-16 { margin-top: 16px; }
+.mb-16 { margin-bottom: 16px; }
+.full-width { width: 100%; }
