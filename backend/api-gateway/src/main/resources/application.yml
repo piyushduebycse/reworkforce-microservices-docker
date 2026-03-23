@@ -2,11 +2,155 @@ spring:
   application:
     name: api-gateway
   config:
-    import: optional:configserver:http://localhost:8888
+    import: optional:configserver:${SPRING_CLOUD_CONFIG_URI:http://localhost:8888}
+  cloud:
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**, /api/users/**, /api/profiles/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: userServiceCB
+                fallbackUri: forward:/fallback/user-service
+
+        - id: leave-service
+          uri: lb://leave-service
+          predicates:
+            - Path=/api/leaves/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: leaveServiceCB
+                fallbackUri: forward:/fallback/leave-service
+
+        - id: performance-service
+          uri: lb://performance-service
+          predicates:
+            - Path=/api/performance/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: performanceServiceCB
+                fallbackUri: forward:/fallback/performance-service
+
+        - id: employee-management-service
+          uri: lb://employee-management-service
+          predicates:
+            - Path=/api/employees/**, /api/departments/**, /api/designations/**, /api/announcements/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: employeeManagementServiceCB
+                fallbackUri: forward:/fallback/employee-management-service
+
+        - id: reporting-service
+          uri: lb://reporting-service
+          predicates:
+            - Path=/api/reports/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: reportingServiceCB
+                fallbackUri: forward:/fallback/reporting-service
+
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: notificationServiceCB
+                fallbackUri: forward:/fallback/notification-service
+
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+
+server:
+  port: 8080
+
+jwt:
+  secret: revworkforce-super-secret-jwt-key-2025-must-be-at-least-256-bits-long
+
+resilience4j:
+  timelimiter:
+    instances:
+      userServiceCB:
+        timeout-duration: 15s
+      leaveServiceCB:
+        timeout-duration: 15s
+      performanceServiceCB:
+        timeout-duration: 15s
+      employeeManagementServiceCB:
+        timeout-duration: 15s
+      reportingServiceCB:
+        timeout-duration: 15s
+      notificationServiceCB:
+        timeout-duration: 15s
+  circuitbreaker:
+    instances:
+      userServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 5
+        minimum-number-of-calls: 10
+      leaveServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 10
+      performanceServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 10
+      employeeManagementServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 10
+      reportingServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 10
+      notificationServiceCB:
+        sliding-window-size: 20
+        failure-rate-threshold: 80
+        wait-duration-in-open-state: 5s
+        minimum-number-of-calls: 10
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.revworkforce: DEBUG

@@ -13,7 +13,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     });
     return next(cloned).pipe(
       catchError((error: HttpErrorResponse) => {
-        if (error.status === 401) {
+        // Only force logout on 401 from auth endpoints, not from every API call
+        if (error.status === 401 && req.url.includes('/api/auth/')) {
           authService.logout();
         }
         return throwError(() => error);
