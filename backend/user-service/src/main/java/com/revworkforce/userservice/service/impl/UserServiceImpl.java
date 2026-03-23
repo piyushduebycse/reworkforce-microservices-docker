@@ -192,6 +192,25 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByIdIn(ids).stream().map(this::toDto).collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<String, Object> getUserStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalUsers", userRepository.count());
+        stats.put("activeUsers", userRepository.countByIsActiveTrue());
+        java.time.LocalDateTime startOfMonth = java.time.LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        stats.put("newThisMonth", userRepository.countByCreatedAtAfter(startOfMonth));
+        java.util.List<java.util.Map<String, Object>> byRole = new java.util.ArrayList<>();
+        for (Object[] row : userRepository.countActiveByRole()) {
+            java.util.Map<String, Object> entry = new java.util.HashMap<>();
+            entry.put("role", row[0].toString());
+            entry.put("count", row[1]);
+            byRole.add(entry);
+        }
+        stats.put("byRole", byRole);
+        return stats;
+    }
+
     private String generateEmployeeId() {
         Integer maxNum = userRepository.findMaxEmployeeIdNumber();
         int nextNum = (maxNum == null ? 0 : maxNum) + 1;

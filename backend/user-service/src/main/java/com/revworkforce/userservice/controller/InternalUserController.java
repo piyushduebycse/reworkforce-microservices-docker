@@ -27,4 +27,10 @@ public class InternalUserController {
         return ResponseEntity.ok(ApiResponse.<List<UserDto>>builder()
                 .success(true).message("Users retrieved").data(userService.getUsersByIds(ids)).statusCode(200).build());
     }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getStats() {
+        return ResponseEntity.ok(ApiResponse.<java.util.Map<String, Object>>builder()
+                .success(true).message("Stats").data(userService.getUserStats()).statusCode(200).build());
+    }
 }

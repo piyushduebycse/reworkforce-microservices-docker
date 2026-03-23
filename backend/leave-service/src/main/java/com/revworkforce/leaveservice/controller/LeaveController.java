@@ -74,8 +74,6 @@ public class LeaveController {
             @RequestHeader("Authorization") String auth,
             @Valid @RequestBody LeaveApplicationRequest request) {
         Long userId = getUserId(auth);
-        Long managerId = jwtTokenProvider.getUserIdFromToken(auth.substring(7));
-        // For now managerId comes from user profile; we get it from JWT or user-service call
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.<LeaveApplicationDto>builder().success(true).message("Leave applied").data(leaveService.applyLeave(userId, null, request)).statusCode(201).build());
     }

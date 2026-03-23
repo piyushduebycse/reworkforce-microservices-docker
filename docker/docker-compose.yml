@@ -20,26 +20,29 @@ services:
       timeout: 20s
       retries: 10
       interval: 10s
+      start_period: 30s
 
   service-discovery:
     build:
-      context: ../backend/service-discovery
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: service-discovery/Dockerfile
     container_name: revworkforce-service-discovery
     ports:
       - "8761:8761"
     networks:
       - revworkforce-net
+    restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   config-server:
     build:
-      context: ../backend/config-server
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: config-server/Dockerfile
     container_name: revworkforce-config-server
     ports:
       - "8888:8888"
@@ -50,16 +53,18 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
     networks:
       - revworkforce-net
+    restart: on-failure
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 60s
 
   api-gateway:
     build:
-      context: ../backend/api-gateway
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: api-gateway/Dockerfile
     container_name: revworkforce-api-gateway
     ports:
       - "8080:8080"
@@ -71,13 +76,15 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     networks:
       - revworkforce-net
+    restart: on-failure
 
   user-service:
     build:
-      context: ../backend/user-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: user-service/Dockerfile
     container_name: revworkforce-user-service
     ports:
       - "8081:8081"
@@ -94,14 +101,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   leave-service:
     build:
-      context: ../backend/leave-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: leave-service/Dockerfile
     container_name: revworkforce-leave-service
     ports:
       - "8082:8082"
@@ -120,14 +129,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   performance-service:
     build:
-      context: ../backend/performance-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: performance-service/Dockerfile
     container_name: revworkforce-performance-service
     ports:
       - "8083:8083"
@@ -144,14 +155,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   employee-management-service:
     build:
-      context: ../backend/employee-management-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: employee-management-service/Dockerfile
     container_name: revworkforce-employee-management
     ports:
       - "8084:8084"
@@ -168,14 +181,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   reporting-service:
     build:
-      context: ../backend/reporting-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: reporting-service/Dockerfile
     container_name: revworkforce-reporting-service
     ports:
       - "8085:8085"
@@ -192,14 +207,16 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   notification-service:
     build:
-      context: ../backend/notification-service
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: notification-service/Dockerfile
     container_name: revworkforce-notification-service
     ports:
       - "8086:8086"
@@ -216,9 +233,11 @@ services:
       - SPRING_DATASOURCE_PASSWORD=revworkforce@123
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CLOUD_CONFIG_URI=http://config-server:8888
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
     networks:
       - revworkforce-net
+    restart: on-failure
 
   frontend:
     build:
@@ -231,6 +250,7 @@ services:
       - api-gateway
     networks:
       - revworkforce-net
+    restart: on-failure
 
 networks:
   revworkforce-net:

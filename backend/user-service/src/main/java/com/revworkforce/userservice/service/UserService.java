@@ -22,4 +22,5 @@ public interface UserService {
     UserDto updateProfile(String email, UpdateProfileRequest request);
     UserDto getUserByIdInternal(Long id);
     List<UserDto> getUsersByIds(List<Long> ids);
+    java.util.Map<String, Object> getUserStats();
 }

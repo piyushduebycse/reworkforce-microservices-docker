@@ -86,6 +86,19 @@ public class LeaveServiceImpl implements LeaveService {
 
     @Override
     public LeaveApplicationDto applyLeave(Long userId, Long managerId, LeaveApplicationRequest request) {
+        // Resolve manager ID from user-service if not provided
+        Long resolvedManagerId = managerId;
+        if (resolvedManagerId == null) {
+            try {
+                ApiResponse<UserDto> userResponse = userServiceClient.getUserById(userId);
+                if (userResponse != null && userResponse.getData() != null) {
+                    resolvedManagerId = userResponse.getData().getManagerId();
+                }
+            } catch (Exception e) {
+                log.warn("Could not fetch manager ID for user {}: {}", userId, e.getMessage());
+            }
+        }
+
         // Validation
         if (request.getStartDate().isBefore(LocalDate.now())) {
             throw new BusinessException("Cannot apply for leave with past start date");
@@ -115,17 +128,17 @@ public class LeaveServiceImpl implements LeaveService {
         }
 
         LeaveApplication application = LeaveApplication.builder()
-                .userId(userId).managerId(managerId).leaveTypeId(request.getLeaveTypeId())
+                .userId(userId).managerId(resolvedManagerId).leaveTypeId(request.getLeaveTypeId())
                 .startDate(request.getStartDate()).endDate(request.getEndDate())
                 .numberOfDays(numberOfDays).reason(request.getReason())
                 .status(LeaveStatus.PENDING).build();
         application = leaveApplicationRepository.save(application);
 
         // Notify manager
-        if (managerId != null) {
+        if (resolvedManagerId != null) {
             try {
                 notificationServiceClient.sendNotification(NotificationRequest.builder()
-                        .recipientUserId(managerId)
+                        .recipientUserId(resolvedManagerId)
                         .title("New Leave Request")
                         .message("An employee has submitted a leave request for " + numberOfDays + " day(s)")
                         .type("LEAVE_APPLIED")

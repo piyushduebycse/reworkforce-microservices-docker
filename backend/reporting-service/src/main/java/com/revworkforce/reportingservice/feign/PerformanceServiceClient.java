@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Map;
 
-@FeignClient(name = "leave-service")
-public interface LeaveServiceClient {
-    @GetMapping("/api/internal/leaves/stats")
-    ApiResponse<Map<String, Object>> getLeaveStats();
+@FeignClient(name = "performance-service")
+public interface PerformanceServiceClient {
+    @GetMapping("/api/internal/performance/stats")
+    ApiResponse<Map<String, Object>> getPerformanceStats();
 }

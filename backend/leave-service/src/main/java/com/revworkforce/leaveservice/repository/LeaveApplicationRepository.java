@@ -21,6 +21,8 @@ public interface LeaveApplicationRepository extends JpaRepository<LeaveApplicati
 
     long countByManagerIdAndStatus(Long managerId, LeaveStatus status);
 
+    long countByStatus(LeaveStatus status);
+
     @Query("SELECT COUNT(la) FROM LeaveApplication la WHERE la.status = 'APPROVED' AND la.startDate <= :today AND la.endDate >= :today")
     long countEmployeesOnLeaveToday(LocalDate today);
 }

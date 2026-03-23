@@ -9,4 +9,8 @@ public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance, Long
     List<LeaveBalance> findByUserIdAndYear(Long userId, int year);
     Optional<LeaveBalance> findByUserIdAndLeaveTypeIdAndYear(Long userId, Long leaveTypeId, int year);
     List<LeaveBalance> findByUserId(Long userId);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT lb.leaveTypeId, SUM(lb.usedDays), SUM(lb.totalDays) FROM LeaveBalance lb WHERE lb.year = :year GROUP BY lb.leaveTypeId")
+    List<Object[]> getUtilizationByTypeAndYear(@org.springframework.data.repository.query.Param("year") int year);
 }

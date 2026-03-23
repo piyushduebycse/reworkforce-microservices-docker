@@ -38,4 +38,12 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT COALESCE(MAX(CAST(SUBSTRING(u.employeeId, 5) AS int)), 0) FROM User u WHERE u.employeeId LIKE 'EMP-%'")
     Integer findMaxEmployeeIdNumber();
+
+    long countByIsActiveTrue();
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.createdAt >= :start")
+    long countByCreatedAtAfter(@org.springframework.data.repository.query.Param("start") java.time.LocalDateTime start);
+
+    @Query("SELECT u.role, COUNT(u) FROM User u WHERE u.isActive = true GROUP BY u.role")
+    List<Object[]> countActiveByRole();
 }
