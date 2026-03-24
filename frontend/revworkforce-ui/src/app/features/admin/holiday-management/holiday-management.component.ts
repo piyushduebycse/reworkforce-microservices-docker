@@ -48,22 +48,25 @@ import { EmployeeManagementService, Holiday } from '../../../core/services/emplo
           <mat-label>Description</mat-label>
           <textarea matInput formControlName="description" rows="2"></textarea>
         </mat-form-field>
-        <mat-checkbox formControlName="isRecurring">Recurring (repeats every year)</mat-checkbox>
+        <mat-checkbox formControlName="isRecurring" class="recurring-check">
+          Recurring (repeats every year)
+        </mat-checkbox>
         <div *ngIf="errorMsg" class="error-msg">{{ errorMsg }}</div>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-stroked-button mat-dialog-close>Cancel</button>
       <button mat-raised-button color="primary" (click)="submit()" [disabled]="form.invalid || loading">
         {{ loading ? 'Saving...' : (data?.id ? 'Update' : 'Add Holiday') }}
       </button>
     </mat-dialog-actions>
     <style>
-      .dialog-form { display:flex; flex-direction:column; gap:8px; min-width:460px; padding-top:8px; }
-      .form-row { display:flex; gap:12px; }
-      .form-row mat-form-field { flex:1; }
-      .full-width { width:100%; }
-      .error-msg { color:#f44336; font-size:13px; }
+      .dialog-form { display: flex; flex-direction: column; gap: 8px; min-width: 460px; padding-top: 8px; }
+      .form-row { display: flex; gap: 12px; }
+      .form-row mat-form-field { flex: 1; }
+      .full-width { width: 100%; }
+      .recurring-check { color: var(--text-2); }
+      .error-msg { color: var(--danger); font-size: 13px; background: var(--danger-bg); border-radius: var(--radius-sm); padding: 8px 12px; }
     </style>
   `
 })
@@ -110,83 +113,144 @@ export class HolidayDialogComponent {
   imports: [CommonModule, MatCardModule, MatTableModule, MatButtonModule, MatIconModule,
     MatDialogModule, MatSnackBarModule, MatChipsModule],
   template: `
-    <div class="page-header">
-      <div>
-        <h1>Holiday Management</h1>
-        <p class="subtitle">{{ holidays.length }} holidays configured</p>
+    <div class="page-wrap">
+      <div class="page-header">
+        <div>
+          <h1>Holiday Management</h1>
+          <p class="sub">{{ holidays.length }} holiday{{ holidays.length !== 1 ? 's' : '' }} configured</p>
+        </div>
+        <button mat-raised-button color="primary" (click)="openDialog()">
+          <mat-icon>add</mat-icon> Add Holiday
+        </button>
       </div>
-      <button mat-raised-button color="primary" (click)="openDialog()">
-        <mat-icon>add</mat-icon> Add Holiday
-      </button>
+
+      <div class="table-card">
+        <div *ngIf="loading" class="loading-msg">
+          <mat-icon>hourglass_empty</mat-icon>
+          <span>Loading holidays...</span>
+        </div>
+
+        <div class="table-wrap" *ngIf="!loading && holidays.length > 0">
+          <table mat-table [dataSource]="holidays" class="dark-table">
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let h" [class.past-cell]="isPast(h.date)">
+                <strong class="date-main">{{ h.date | date:'dd MMM yyyy' }}</strong>
+                <span class="day-label">{{ h.date | date:'EEEE' }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Holiday</th>
+              <td mat-cell *matCellDef="let h" [class.past-cell]="isPast(h.date)">
+                <span class="holiday-name">{{ h.name }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let h">
+                <span class="type-badge type-{{ h.holidayType?.toLowerCase() }}">
+                  {{ h.holidayType || 'COMPANY' }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="description">
+              <th mat-header-cell *matHeaderCellDef>Description</th>
+              <td mat-cell *matCellDef="let h">
+                <span class="desc-text">{{ h.description || '—' }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="recurring">
+              <th mat-header-cell *matHeaderCellDef>Recurring</th>
+              <td mat-cell *matCellDef="let h">
+                <span class="recurring-chip" [class.is-recurring]="h.isRecurring">
+                  <mat-icon>{{ h.isRecurring ? 'autorenew' : 'remove' }}</mat-icon>
+                  {{ h.isRecurring ? 'Yes' : 'No' }}
+                </span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let h">
+                <button mat-icon-button color="primary" (click)="openDialog(h)" title="Edit">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteHoliday(h)" title="Delete">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="columns"></tr>
+            <tr mat-row *matRowDef="let row; columns: columns;" [class.past-row]="isPast(row.date)"></tr>
+          </table>
+        </div>
+
+        <div *ngIf="!loading && holidays.length === 0" class="empty-msg">
+          <mat-icon>event_busy</mat-icon>
+          <p>No holidays configured. Click "Add Holiday" to add one.</p>
+        </div>
+      </div>
     </div>
 
-    <mat-card>
-      <mat-card-content>
-        <div *ngIf="loading" class="loading-msg">Loading holidays...</div>
-        <table mat-table [dataSource]="holidays" class="full-width" *ngIf="!loading">
-          <ng-container matColumnDef="date">
-            <th mat-header-cell *matHeaderCellDef>Date</th>
-            <td mat-cell *matCellDef="let h">
-              <strong>{{ h.date | date:'dd MMM yyyy' }}</strong>
-              <span class="day-label">{{ h.date | date:'EEEE' }}</span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Holiday</th>
-            <td mat-cell *matCellDef="let h">{{ h.name }}</td>
-          </ng-container>
-          <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef>Type</th>
-            <td mat-cell *matCellDef="let h">
-              <span class="type-badge type-{{ h.holidayType?.toLowerCase() }}">
-                {{ h.holidayType || 'COMPANY' }}
-              </span>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="description">
-            <th mat-header-cell *matHeaderCellDef>Description</th>
-            <td mat-cell *matCellDef="let h">{{ h.description || '—' }}</td>
-          </ng-container>
-          <ng-container matColumnDef="recurring">
-            <th mat-header-cell *matHeaderCellDef>Recurring</th>
-            <td mat-cell *matCellDef="let h">
-              <mat-icon [style.color]="h.isRecurring ? '#4caf50' : '#ccc'" style="font-size:18px;vertical-align:middle">
-                {{ h.isRecurring ? 'autorenew' : 'remove' }}
-              </mat-icon>
-            </td>
-          </ng-container>
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let h">
-              <button mat-icon-button color="primary" (click)="openDialog(h)" title="Edit">
-                <mat-icon>edit</mat-icon>
-              </button>
-              <button mat-icon-button color="warn" (click)="deleteHoliday(h)" title="Delete">
-                <mat-icon>delete</mat-icon>
-              </button>
-            </td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="columns"></tr>
-          <tr mat-row *matRowDef="let row; columns: columns;" [class.past-holiday]="isPast(row.date)"></tr>
-        </table>
-        <div *ngIf="!loading && holidays.length === 0" class="empty-msg">
-          No holidays configured. Click "Add Holiday" to add one.
-        </div>
-      </mat-card-content>
-    </mat-card>
-
     <style>
-      .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-      .subtitle { color:#666; font-size:13px; margin:0; }
-      .full-width { width:100%; }
-      .loading-msg, .empty-msg { padding:24px; text-align:center; color:#666; }
-      .day-label { display:block; font-size:11px; color:#888; }
-      .type-badge { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; text-transform:uppercase; }
-      .type-national { background:#e3f2fd; color:#1565c0; }
-      .type-regional { background:#e8f5e9; color:#2e7d32; }
-      .type-optional { background:#fff9c4; color:#f57f17; }
-      .type-company { background:#f3e5f5; color:#6a1b9a; }
-      .past-holiday td { opacity: 0.5; }
+      :host { display: block; padding: 24px; background: var(--bg-base); min-height: 100%; }
+
+      .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+      .page-header h1 { margin: 0; color: var(--text-1); font-size: 22px; font-weight: 700; }
+      .sub { color: var(--text-3); font-size: 13px; margin: 4px 0 0; }
+
+      .table-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .loading-msg {
+        display: flex; align-items: center; justify-content: center;
+        gap: 10px; padding: 40px; color: var(--text-3);
+      }
+
+      .table-wrap { overflow-x: auto; }
+
+      .dark-table { width: 100%; background: transparent; }
+      .dark-table ::ng-deep .mat-mdc-header-row {
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .dark-table ::ng-deep .mat-mdc-header-cell {
+        color: var(--text-3); font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.6px; border-bottom: none;
+      }
+      .dark-table ::ng-deep .mat-mdc-row {
+        background: transparent; border-bottom: 1px solid var(--border); transition: background 0.15s;
+      }
+      .dark-table ::ng-deep .mat-mdc-row:hover { background: var(--bg-surface); }
+      .dark-table ::ng-deep .mat-mdc-row:last-child { border-bottom: none; }
+      .dark-table ::ng-deep .mat-mdc-cell { color: var(--text-2); border-bottom: none; font-size: 13px; }
+      .dark-table ::ng-deep .past-row { opacity: 0.45; }
+
+      .date-main { display: block; color: var(--text-1); font-size: 13px; font-weight: 600; }
+      .day-label { display: block; font-size: 11px; color: var(--text-3); }
+      .holiday-name { color: var(--text-1); font-size: 14px; }
+      .desc-text { color: var(--text-3); font-size: 13px; }
+
+      .type-badge { padding: 3px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+      .type-national { background: var(--blue-bg); color: var(--blue); }
+      .type-regional { background: var(--success-bg); color: var(--success); }
+      .type-optional { background: var(--warning-bg); color: var(--warning); }
+      .type-company { background: var(--purple-bg); color: var(--purple); }
+
+      .recurring-chip {
+        display: inline-flex; align-items: center; gap: 4px;
+        font-size: 12px; color: var(--text-3);
+      }
+      .recurring-chip mat-icon { font-size: 15px; width: 15px; height: 15px; }
+      .recurring-chip.is-recurring { color: var(--success); }
+
+      .empty-msg { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px; color: var(--text-3); }
+      .empty-msg mat-icon { font-size: 40px; width: 40px; height: 40px; }
+      .empty-msg p { margin: 0; font-size: 14px; }
     </style>
   `
 })

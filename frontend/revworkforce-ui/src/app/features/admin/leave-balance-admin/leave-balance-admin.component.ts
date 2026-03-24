@@ -30,46 +30,46 @@ import { forkJoin } from 'rxjs';
       <p>Manage leave types, default quotas, and employee balances</p>
     </div>
 
-    <mat-tab-group>
+    <mat-tab-group class="dark-tabs">
 
       <!-- ═══ TAB 1: Leave Types & Quotas ═══ -->
       <mat-tab label="Leave Types & Quotas">
         <div class="tab-content">
 
           <!-- Leave Types -->
-          <mat-card class="section-card">
-            <mat-card-content>
-              <div class="section-header">
-                <h3>Leave Types</h3>
-                <button mat-raised-button color="primary" (click)="showTypeForm = !showTypeForm">
-                  <mat-icon>{{ showTypeForm ? 'close' : 'add' }}</mat-icon>
-                  {{ showTypeForm ? 'Cancel' : 'Add Type' }}
-                </button>
-              </div>
+          <div class="section-card dark-card">
+            <div class="section-header">
+              <h3>Leave Types</h3>
+              <button class="action-btn primary-btn" (click)="showTypeForm = !showTypeForm">
+                <mat-icon>{{ showTypeForm ? 'close' : 'add' }}</mat-icon>
+                {{ showTypeForm ? 'Cancel' : 'Add Type' }}
+              </button>
+            </div>
 
-              <!-- Add Type Form -->
-              <div *ngIf="showTypeForm" class="inline-form">
-                <mat-form-field appearance="outline">
-                  <mat-label>Type Name *</mat-label>
-                  <input matInput [(ngModel)]="newType.name" placeholder="e.g. Paternity Leave">
-                </mat-form-field>
-                <mat-form-field appearance="outline">
-                  <mat-label>Description</mat-label>
-                  <input matInput [(ngModel)]="newType.description" placeholder="Brief description">
-                </mat-form-field>
-                <mat-checkbox [(ngModel)]="newType.isPaid" color="primary">Paid Leave</mat-checkbox>
-                <button mat-raised-button color="primary" [disabled]="!newType.name || savingType"
-                  (click)="saveLeaveType()">
-                  {{ savingType ? 'Saving...' : 'Add Leave Type' }}
-                </button>
-              </div>
+            <!-- Add Type Form -->
+            <div *ngIf="showTypeForm" class="inline-form">
+              <mat-form-field appearance="outline" class="dark-field">
+                <mat-label>Type Name *</mat-label>
+                <input matInput [(ngModel)]="newType.name" placeholder="e.g. Paternity Leave">
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="dark-field">
+                <mat-label>Description</mat-label>
+                <input matInput [(ngModel)]="newType.description" placeholder="Brief description">
+              </mat-form-field>
+              <mat-checkbox [(ngModel)]="newType.isPaid" color="primary" class="paid-checkbox">Paid Leave</mat-checkbox>
+              <button class="action-btn primary-btn" [disabled]="!newType.name || savingType"
+                (click)="saveLeaveType()">
+                {{ savingType ? 'Saving…' : 'Add Leave Type' }}
+              </button>
+            </div>
 
-              <table mat-table [dataSource]="leaveTypes" class="full-width">
+            <div class="table-scroll">
+              <table mat-table [dataSource]="leaveTypes" class="dark-table full-width">
                 <ng-container matColumnDef="name">
                   <th mat-header-cell *matHeaderCellDef>Name</th>
                   <td mat-cell *matCellDef="let t">
                     <ng-container *ngIf="editTypeId !== t.id">
-                      <strong>{{ t.name }}</strong>
+                      <strong class="type-name">{{ t.name }}</strong>
                       <span class="paid-chip" *ngIf="t.isPaid || t.paid">Paid</span>
                     </ng-container>
                     <input *ngIf="editTypeId === t.id" [(ngModel)]="editTypeName" class="edit-input">
@@ -78,7 +78,9 @@ import { forkJoin } from 'rxjs';
                 <ng-container matColumnDef="description">
                   <th mat-header-cell *matHeaderCellDef>Description</th>
                   <td mat-cell *matCellDef="let t">
-                    <ng-container *ngIf="editTypeId !== t.id">{{ t.description || '—' }}</ng-container>
+                    <ng-container *ngIf="editTypeId !== t.id">
+                      <span class="desc-text">{{ t.description || '—' }}</span>
+                    </ng-container>
                     <input *ngIf="editTypeId === t.id" [(ngModel)]="editTypeDesc" class="edit-input">
                   </td>
                 </ng-container>
@@ -86,15 +88,15 @@ import { forkJoin } from 'rxjs';
                   <th mat-header-cell *matHeaderCellDef>Actions</th>
                   <td mat-cell *matCellDef="let t">
                     <ng-container *ngIf="editTypeId !== t.id">
-                      <button mat-icon-button color="primary" (click)="startEditType(t)" title="Edit">
+                      <button mat-icon-button class="icon-btn" (click)="startEditType(t)" title="Edit">
                         <mat-icon>edit</mat-icon>
                       </button>
                     </ng-container>
                     <ng-container *ngIf="editTypeId === t.id">
-                      <button mat-icon-button color="primary" (click)="saveEditType(t)" title="Save">
+                      <button mat-icon-button class="icon-btn success-icon" (click)="saveEditType(t)" title="Save">
                         <mat-icon>check</mat-icon>
                       </button>
-                      <button mat-icon-button (click)="editTypeId = null" title="Cancel">
+                      <button mat-icon-button class="icon-btn" (click)="editTypeId = null" title="Cancel">
                         <mat-icon>close</mat-icon>
                       </button>
                     </ng-container>
@@ -103,25 +105,27 @@ import { forkJoin } from 'rxjs';
                 <tr mat-header-row *matHeaderRowDef="['name','description','actions']"></tr>
                 <tr mat-row *matRowDef="let row; columns: ['name','description','actions'];"></tr>
               </table>
-            </mat-card-content>
-          </mat-card>
+            </div>
+          </div>
 
           <!-- Default Quotas -->
-          <mat-card class="section-card">
-            <mat-card-content>
-              <div class="section-header">
+          <div class="section-card dark-card">
+            <div class="section-header">
+              <div>
                 <h3>Default Quotas — {{ currentYear }}</h3>
                 <p class="hint">Set how many days each role gets per leave type. Applied automatically when adding new employees.</p>
               </div>
-              <div class="quota-note">
-                <mat-icon>info</mat-icon>
-                After saving quotas, use <strong>"Apply to All"</strong> in the Balances tab to assign them to existing employees.
-              </div>
+            </div>
+            <div class="quota-note">
+              <mat-icon>info</mat-icon>
+              After saving quotas, use <strong>"Apply to All"</strong> in the Balances tab to assign them to existing employees.
+            </div>
 
-              <table mat-table [dataSource]="quotaRows" class="full-width quota-table">
+            <div class="table-scroll">
+              <table mat-table [dataSource]="quotaRows" class="dark-table full-width quota-table">
                 <ng-container matColumnDef="leaveType">
                   <th mat-header-cell *matHeaderCellDef>Leave Type</th>
-                  <td mat-cell *matCellDef="let row"><strong>{{ row.leaveTypeName }}</strong></td>
+                  <td mat-cell *matCellDef="let row"><strong class="type-name">{{ row.leaveTypeName }}</strong></td>
                 </ng-container>
                 <ng-container *ngFor="let role of roles" [matColumnDef]="role">
                   <th mat-header-cell *matHeaderCellDef>
@@ -133,143 +137,323 @@ import { forkJoin } from 'rxjs';
                         [(ngModel)]="row.days[role]"
                         class="quota-input"
                         (change)="saveQuota(row, role)">
-                      <span class="days-unit">days</span>
+                      <span class="days-unit">d</span>
                     </div>
                   </td>
                 </ng-container>
                 <tr mat-header-row *matHeaderRowDef="quotaColumns"></tr>
                 <tr mat-row *matRowDef="let r; columns: quotaColumns;"></tr>
               </table>
+            </div>
 
-              <div *ngIf="quotaRows.length === 0" class="empty-msg">
-                Add leave types above to set quotas.
-              </div>
-            </mat-card-content>
-          </mat-card>
+            <div *ngIf="quotaRows.length === 0" class="empty-msg">
+              Add leave types above to set quotas.
+            </div>
+          </div>
         </div>
       </mat-tab>
 
       <!-- ═══ TAB 2: Employee Balances ═══ -->
       <mat-tab label="Employee Balances">
         <div class="tab-content">
-          <mat-card class="section-card">
-            <mat-card-content>
-              <div class="section-header">
-                <h3>Employee Balances — {{ currentYear }}</h3>
-                <div class="header-actions">
-                  <button mat-stroked-button color="primary" [disabled]="initializing" (click)="applyQuotaToAll()">
-                    <mat-icon>people</mat-icon>
-                    {{ initializing ? 'Applying...' : 'Apply Quota to All' }}
-                  </button>
-                  <span class="hint-small">Assigns missing balances from quota defaults</span>
-                </div>
+          <div class="section-card dark-card">
+            <div class="section-header">
+              <h3>Employee Balances — {{ currentYear }}</h3>
+              <div class="header-actions">
+                <button class="action-btn stroked-btn" [disabled]="initializing" (click)="applyQuotaToAll()">
+                  <mat-icon>people</mat-icon>
+                  {{ initializing ? 'Applying…' : 'Apply Quota to All' }}
+                </button>
+                <span class="hint-small">Assigns missing balances from quota defaults</span>
               </div>
+            </div>
 
-              <div *ngIf="loadingBalances" class="loading-center">
-                <mat-spinner diameter="40"></mat-spinner>
-              </div>
+            <div *ngIf="loadingBalances" class="loading-center">
+              <mat-spinner diameter="40"></mat-spinner>
+            </div>
 
-              <div *ngIf="!loadingBalances" class="table-scroll">
-                <table mat-table [dataSource]="employees" class="full-width">
-                  <ng-container matColumnDef="employee">
-                    <th mat-header-cell *matHeaderCellDef>Employee</th>
-                    <td mat-cell *matCellDef="let emp">
-                      <div class="emp-cell">
-                        <div class="emp-avatar">{{ emp.firstName[0] }}{{ emp.lastName[0] }}</div>
-                        <div>
-                          <div class="emp-name">{{ emp.firstName }} {{ emp.lastName }}</div>
-                          <div class="emp-meta">{{ emp.employeeId }} · <span [ngClass]="'role-' + emp.role.toLowerCase()">{{ emp.role }}</span></div>
-                        </div>
+            <div *ngIf="!loadingBalances" class="table-scroll">
+              <table mat-table [dataSource]="employees" class="dark-table full-width">
+                <ng-container matColumnDef="employee">
+                  <th mat-header-cell *matHeaderCellDef>Employee</th>
+                  <td mat-cell *matCellDef="let emp">
+                    <div class="emp-cell">
+                      <div class="emp-avatar">{{ emp.firstName[0] }}{{ emp.lastName[0] }}</div>
+                      <div>
+                        <div class="emp-name">{{ emp.firstName }} {{ emp.lastName }}</div>
+                        <div class="emp-meta">{{ emp.employeeId }} · <span [ngClass]="'role-' + emp.role.toLowerCase()">{{ emp.role }}</span></div>
                       </div>
-                    </td>
-                  </ng-container>
+                    </div>
+                  </td>
+                </ng-container>
 
-                  <ng-container *ngFor="let t of leaveTypes" [matColumnDef]="'type_' + t.id">
-                    <th mat-header-cell *matHeaderCellDef>{{ t.name }}</th>
-                    <td mat-cell *matCellDef="let emp">
-                      <ng-container *ngIf="getBalance(emp.id, t.id) as bal">
-                        <div class="bal-cell" *ngIf="editKey !== (emp.id + '_' + t.id)">
-                          <span class="bal-total">{{ bal.totalDays }}</span>
-                          <span class="bal-used">/{{ bal.usedDays }}u</span>
-                          <button mat-icon-button class="mini-btn" (click)="startBalEdit(emp.id, t.id, bal.totalDays)">
-                            <mat-icon>edit</mat-icon>
-                          </button>
-                        </div>
-                        <div class="bal-edit" *ngIf="editKey === (emp.id + '_' + t.id)">
-                          <input type="number" [(ngModel)]="editVal" min="0" class="bal-input"
-                            (keyup.enter)="saveBal(emp.id, t.id)" (keyup.escape)="editKey = null">
-                          <button mat-icon-button color="primary" (click)="saveBal(emp.id, t.id)"><mat-icon>check</mat-icon></button>
-                          <button mat-icon-button (click)="editKey = null"><mat-icon>close</mat-icon></button>
-                        </div>
-                      </ng-container>
-                      <ng-container *ngIf="!getBalance(emp.id, t.id)">
-                        <span class="no-bal">—</span>
-                        <button mat-icon-button class="mini-btn" title="Set" (click)="startBalEdit(emp.id, t.id, 0)">
-                          <mat-icon>add</mat-icon>
+                <ng-container *ngFor="let t of leaveTypes" [matColumnDef]="'type_' + t.id">
+                  <th mat-header-cell *matHeaderCellDef>{{ t.name }}</th>
+                  <td mat-cell *matCellDef="let emp">
+                    <ng-container *ngIf="getBalance(emp.id, t.id) as bal">
+                      <div class="bal-cell" *ngIf="editKey !== (emp.id + '_' + t.id)">
+                        <span class="bal-total">{{ bal.totalDays }}</span>
+                        <span class="bal-used">/{{ bal.usedDays }}u</span>
+                        <button mat-icon-button class="mini-btn" (click)="startBalEdit(emp.id, t.id, bal.totalDays)">
+                          <mat-icon>edit</mat-icon>
                         </button>
-                      </ng-container>
-                    </td>
-                  </ng-container>
+                      </div>
+                      <div class="bal-edit" *ngIf="editKey === (emp.id + '_' + t.id)">
+                        <input type="number" [(ngModel)]="editVal" min="0" class="bal-input"
+                          (keyup.enter)="saveBal(emp.id, t.id)" (keyup.escape)="editKey = null">
+                        <button mat-icon-button class="icon-btn success-icon" (click)="saveBal(emp.id, t.id)"><mat-icon>check</mat-icon></button>
+                        <button mat-icon-button class="icon-btn" (click)="editKey = null"><mat-icon>close</mat-icon></button>
+                      </div>
+                    </ng-container>
+                    <ng-container *ngIf="!getBalance(emp.id, t.id)">
+                      <span class="no-bal">—</span>
+                      <button mat-icon-button class="mini-btn" title="Set" (click)="startBalEdit(emp.id, t.id, 0)">
+                        <mat-icon>add</mat-icon>
+                      </button>
+                    </ng-container>
+                  </td>
+                </ng-container>
 
-                  <tr mat-header-row *matHeaderRowDef="balColumns"></tr>
-                  <tr mat-row *matRowDef="let row; columns: balColumns;"></tr>
-                </table>
-                <p *ngIf="employees.length === 0" class="empty-msg">No employees found.</p>
-              </div>
-            </mat-card-content>
-          </mat-card>
+                <tr mat-header-row *matHeaderRowDef="balColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: balColumns;"></tr>
+              </table>
+              <p *ngIf="employees.length === 0" class="empty-msg">No employees found.</p>
+            </div>
+          </div>
         </div>
       </mat-tab>
 
     </mat-tab-group>
 
     <style>
-      .page-header { margin-bottom: 24px; }
-      .page-header h1 { margin: 0; }
-      .page-header p { color: #666; margin: 4px 0 0; }
-      .tab-content { padding: 20px 0; display: flex; flex-direction: column; gap: 20px; }
-      .section-card { }
-      .section-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
-      .section-header h3 { margin: 0; }
-      .section-header p { color: #666; font-size: 13px; margin: 4px 0 0; }
-      .header-actions { display: flex; align-items: center; gap: 12px; }
-      .hint-small { font-size: 12px; color: #888; }
-      .hint { color: #666; font-size: 13px; }
-      .quota-note { display: flex; align-items: center; gap: 8px; background: #e3f2fd; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: #1565c0; }
-      .quota-note mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
-      .inline-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px; background: #f5f5f5; border-radius: 8px; margin-bottom: 16px; }
+      .tab-content {
+        padding: 20px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .dark-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 16px;
+      }
+      .section-header h3 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--text-1);
+      }
+      .section-header p { color: var(--text-3); font-size: 13px; margin: 4px 0 0; }
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hint-small { font-size: 12px; color: var(--text-3); }
+      .hint { color: var(--text-3); font-size: 13px; }
+      .quota-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--blue-bg);
+        border: 1px solid var(--blue);
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        margin-bottom: 16px;
+        font-size: 13px;
+        color: var(--blue);
+      }
+      .quota-note mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      .inline-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        padding: 16px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 16px;
+      }
       .inline-form mat-form-field { flex: 1; min-width: 180px; }
+      .paid-checkbox { color: var(--text-2); }
       .full-width { width: 100%; }
       .table-scroll { overflow-x: auto; }
-      .edit-input { border: 1px solid #3f51b5; border-radius: 4px; padding: 4px 8px; font-size: 13px; width: 130px; }
-      .paid-chip { margin-left: 6px; background: #e8f5e9; color: #2e7d32; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 8px; }
+      /* Dark table */
+      .dark-table {
+        background: transparent !important;
+        width: 100%;
+      }
+      .dark-table th.mat-header-cell {
+        background: var(--bg-surface) !important;
+        color: var(--text-3) !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        border-bottom: 1px solid var(--border) !important;
+      }
+      .dark-table td.mat-cell {
+        color: var(--text-1) !important;
+        border-bottom: 1px solid var(--border-a) !important;
+        font-size: 13px;
+      }
+      .dark-table tr.mat-row:hover td {
+        background: var(--bg-elevated) !important;
+      }
+      .edit-input {
+        background: var(--bg-input);
+        border: 1px solid var(--primary);
+        border-radius: var(--radius-sm);
+        padding: 5px 8px;
+        font-size: 13px;
+        color: var(--text-1);
+        width: 130px;
+        outline: none;
+      }
+      .edit-input:focus {
+        box-shadow: 0 0 0 2px var(--primary-glow);
+      }
+      .type-name { color: var(--text-1); font-weight: 600; }
+      .desc-text { color: var(--text-2); }
+      .paid-chip {
+        margin-left: 6px;
+        background: var(--success-bg);
+        color: var(--success);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 6px;
+        border-radius: 8px;
+      }
       /* Quota table */
-      .quota-table .role-head { font-size: 11px; font-weight: 700; text-transform: uppercase; }
-      .quota-input-cell { display: flex; align-items: center; gap: 4px; }
-      .quota-input { width: 65px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; text-align: center; }
-      .quota-input:focus { outline: none; border-color: #3f51b5; }
-      .days-unit { font-size: 11px; color: #888; }
-      /* Role styles */
-      .role-admin, .role-ADMIN { color: #f44336; font-weight: 600; }
-      .role-manager, .role-MANAGER { color: #ff9800; font-weight: 600; }
-      .role-employee, .role-EMPLOYEE { color: #4caf50; font-weight: 600; }
+      .quota-table .role-head {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .quota-input-cell {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .quota-input {
+        width: 60px;
+        padding: 5px 8px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        text-align: center;
+        color: var(--text-1);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .quota-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-glow);
+      }
+      .days-unit { font-size: 11px; color: var(--text-3); }
+      /* Role colors */
+      .role-admin,    .role-ADMIN    { color: var(--danger);  font-weight: 700; }
+      .role-manager,  .role-MANAGER  { color: var(--warning); font-weight: 700; }
+      .role-employee, .role-EMPLOYEE { color: var(--success); font-weight: 700; }
       /* Balance table */
-      .emp-cell { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-      .emp-avatar { width: 32px; height: 32px; border-radius: 50%; background: #3f51b5; color: white;
-        display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-      .emp-name { font-size: 13px; font-weight: 600; }
-      .emp-meta { font-size: 11px; color: #888; }
+      .emp-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 0;
+      }
+      .emp-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #6366f1);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .emp-name { font-size: 13px; font-weight: 600; color: var(--text-1); }
+      .emp-meta { font-size: 11px; color: var(--text-3); }
       .bal-cell { display: flex; align-items: center; }
-      .bal-total { font-weight: 700; color: #3f51b5; font-size: 14px; }
-      .bal-used { font-size: 11px; color: #888; margin-left: 2px; }
-      .bal-edit { display: flex; align-items: center; }
-      .bal-input { width: 50px; padding: 4px 6px; border: 1px solid #3f51b5; border-radius: 4px; font-size: 12px; }
-      .mini-btn { width: 24px; height: 24px; line-height: 24px; opacity: 0.4; }
+      .bal-total { font-weight: 700; color: var(--primary); font-size: 14px; }
+      .bal-used { font-size: 11px; color: var(--text-3); margin-left: 2px; }
+      .bal-edit { display: flex; align-items: center; gap: 2px; }
+      .bal-input {
+        width: 50px;
+        padding: 4px 6px;
+        background: var(--bg-input);
+        border: 1px solid var(--primary);
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        color: var(--text-1);
+        outline: none;
+      }
+      .mini-btn {
+        width: 24px !important;
+        height: 24px !important;
+        line-height: 24px !important;
+        opacity: 0.4;
+        color: var(--text-2) !important;
+      }
       .mini-btn:hover { opacity: 1; }
       .mini-btn mat-icon { font-size: 15px; width: 15px; height: 15px; }
-      .no-bal { color: #ccc; font-size: 13px; }
+      .no-bal { color: var(--text-3); font-size: 13px; }
       .loading-center { display: flex; justify-content: center; padding: 40px; }
-      .empty-msg { text-align: center; color: #999; padding: 24px; }
+      .empty-msg { text-align: center; color: var(--text-3); padding: 24px; }
+      /* Buttons */
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+      }
+      .action-btn mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      .primary-btn {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+      .primary-btn:hover:not(:disabled) { opacity: 0.88; }
+      .primary-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .stroked-btn {
+        background: transparent;
+        color: var(--primary);
+        border-color: var(--primary);
+      }
+      .stroked-btn:hover:not(:disabled) {
+        background: var(--primary-glow);
+      }
+      .stroked-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+      .icon-btn {
+        color: var(--text-3) !important;
+        transition: color 0.15s;
+      }
+      .icon-btn:hover { color: var(--text-1) !important; }
+      .success-icon { color: var(--success) !important; }
     </style>
   `
 })

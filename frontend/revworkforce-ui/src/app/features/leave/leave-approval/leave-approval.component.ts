@@ -30,17 +30,20 @@ import { User } from '../../../core/models/user.model';
 
     <mat-card *ngFor="let app of applications" class="app-card">
       <mat-card-content>
+
+        <!-- Header: avatar + name + status -->
         <div class="app-header">
           <div class="emp-info">
             <div class="emp-avatar">{{ getInitials(app.userId) }}</div>
-            <div>
+            <div class="emp-meta">
               <strong class="emp-name">{{ getEmployeeName(app.userId) }}</strong>
               <span class="emp-id">{{ getEmployeeId(app.userId) }}</span>
             </div>
           </div>
-          <span class="status-badge">PENDING</span>
+          <span class="status-badge pending">PENDING</span>
         </div>
 
+        <!-- Leave details -->
         <div class="leave-details">
           <div class="detail-item">
             <mat-icon>event</mat-icon>
@@ -48,7 +51,7 @@ import { User } from '../../../core/models/user.model';
           </div>
           <div class="detail-item">
             <mat-icon>schedule</mat-icon>
-            <span><strong>{{ app.numberOfDays }} working day{{ app.numberOfDays !== 1 ? 's' : '' }}</strong> · {{ app.leaveTypeName }}</span>
+            <span><strong>{{ app.numberOfDays }} working day{{ app.numberOfDays !== 1 ? 's' : '' }}</strong> &middot; {{ app.leaveTypeName }}</span>
           </div>
           <div class="detail-item" *ngIf="app.reason">
             <mat-icon>notes</mat-icon>
@@ -87,32 +90,61 @@ import { User } from '../../../core/models/user.model';
             <mat-icon>close</mat-icon> Reject
           </button>
         </div>
+
       </mat-card-content>
     </mat-card>
 
     <style>
-      .page-header { margin-bottom: 24px; }
-      .page-header h1 { margin: 0; }
-      .page-header p { color: #666; margin: 4px 0 0; }
-      .empty-state { text-align: center; padding: 64px; color: #999; }
-      .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: #4caf50; display: block; margin: 0 auto 12px; }
-      .app-card { margin-bottom: 16px; }
+      .empty-state {
+        text-align: center; padding: 64px 24px;
+        color: var(--text-3); background: var(--bg-card);
+        border: 1px solid var(--border); border-radius: var(--radius);
+      }
+      .empty-state mat-icon {
+        font-size: 48px; width: 48px; height: 48px; color: var(--success);
+        display: block; margin: 0 auto 12px;
+      }
+      .empty-state p { margin: 0; font-size: 16px; }
+
+      .app-card {
+        margin-bottom: 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+
+      /* Header */
       .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
       .emp-info { display: flex; align-items: center; gap: 12px; }
-      .emp-avatar { width: 40px; height: 40px; border-radius: 50%; background: #3f51b5; color: white;
-        display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
-      .emp-name { display: block; font-size: 15px; font-weight: 600; }
-      .emp-id { font-size: 12px; color: #888; font-family: monospace; }
-      .status-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #fff3e0; color: #e65100; }
-      .leave-details { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 12px; background: #f9f9f9; border-radius: 8px; }
-      .detail-item { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: #444; }
-      .detail-item mat-icon { font-size: 18px; width: 18px; height: 18px; color: #888; margin-top: 1px; flex-shrink: 0; }
-      .reason-text { font-style: italic; }
-      .applied-at { color: #999; font-size: 12px; }
-      .comment-section { padding-top: 12px; border-top: 1px solid #eee; }
+      .emp-avatar {
+        width: 42px; height: 42px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        color: #fff; display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 14px; flex-shrink: 0;
+      }
+      .emp-meta { display: flex; flex-direction: column; gap: 2px; }
+      .emp-name { font-size: 15px; font-weight: 700; color: var(--text-1); }
+      .emp-id { font-size: 12px; color: var(--text-3); font-family: monospace; }
+      .status-badge.pending { background: var(--warning-bg); color: var(--warning); padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; }
+
+      /* Leave details */
+      .leave-details {
+        display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;
+        padding: 14px; background: var(--bg-elevated); border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+      }
+      .detail-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--text-2); }
+      .detail-item mat-icon { font-size: 17px; width: 17px; height: 17px; color: var(--text-3); margin-top: 2px; flex-shrink: 0; }
+      .reason-text { font-style: italic; color: var(--text-3); }
+      .applied-at { color: var(--text-3); font-size: 12px; }
+
+      /* Comment section */
+      .comment-section { padding-top: 14px; border-top: 1px solid var(--border); }
       .full-width { width: 100%; }
       .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
-      .actions { display: flex; gap: 8px; padding-top: 12px; border-top: 1px solid #eee; }
+
+      /* Primary actions */
+      .actions { display: flex; gap: 8px; padding-top: 14px; border-top: 1px solid var(--border); }
     </style>
   `
 })

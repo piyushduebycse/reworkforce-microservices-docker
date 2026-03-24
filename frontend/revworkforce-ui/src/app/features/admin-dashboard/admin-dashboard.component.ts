@@ -24,51 +24,51 @@ import { EmployeeManagementService } from '../../core/services/employee-manageme
     <div class="card-grid">
       <mat-card class="stat-card clickable" routerLink="/admin/employees">
         <mat-card-content>
-          <mat-icon class="stat-icon blue">people</mat-icon>
+          <div class="stat-icon-wrap blue"><mat-icon>people</mat-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.totalEmployees }}</div>
             <div class="stat-label">Total Employees</div>
-            <div class="stat-sub">{{ stats.activeEmployees }} active</div>
+            <div class="stat-sub ok">{{ stats.activeEmployees }} active</div>
           </div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="stat-card clickable" routerLink="/leave/approvals">
         <mat-card-content>
-          <mat-icon class="stat-icon orange">pending_actions</mat-icon>
+          <div class="stat-icon-wrap orange"><mat-icon>pending_actions</mat-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.pendingApprovals }}</div>
             <div class="stat-label">Pending Approvals</div>
-            <div class="stat-sub" *ngIf="stats.pendingApprovals > 0" style="color:#e65100">Needs attention</div>
-            <div class="stat-sub" *ngIf="stats.pendingApprovals === 0" style="color:#2e7d32">All clear</div>
+            <div class="stat-sub alert" *ngIf="stats.pendingApprovals > 0">Needs attention</div>
+            <div class="stat-sub ok" *ngIf="stats.pendingApprovals === 0">All clear</div>
           </div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="stat-card clickable" routerLink="/admin/departments">
         <mat-card-content>
-          <mat-icon class="stat-icon purple">apartment</mat-icon>
+          <div class="stat-icon-wrap purple"><mat-icon>apartment</mat-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.totalDepartments }}</div>
             <div class="stat-label">Departments</div>
-            <div class="stat-sub">{{ stats.activeDepartments }} active</div>
+            <div class="stat-sub ok">{{ stats.activeDepartments }} active</div>
           </div>
         </mat-card-content>
       </mat-card>
 
       <mat-card class="stat-card">
         <mat-card-content>
-          <mat-icon class="stat-icon green">event_available</mat-icon>
+          <div class="stat-icon-wrap green"><mat-icon>event_available</mat-icon></div>
           <div class="stat-body">
             <div class="stat-value">{{ stats.upcomingHolidays }}</div>
             <div class="stat-label">Upcoming Holidays</div>
-            <div class="stat-sub" *ngIf="nextHoliday">Next: {{ nextHoliday.name }} ({{ nextHoliday.date | date:'dd MMM' }})</div>
+            <div class="stat-sub ok" *ngIf="nextHoliday">Next: {{ nextHoliday.name }} ({{ nextHoliday.date | date:'dd MMM' }})</div>
           </div>
         </mat-card-content>
       </mat-card>
     </div>
 
-    <!-- Role distribution -->
+    <!-- Role distribution + upcoming holidays -->
     <div class="section-grid">
       <div>
         <h2>Team Breakdown</h2>
@@ -76,28 +76,28 @@ import { EmployeeManagementService } from '../../core/services/employee-manageme
           <mat-card-content>
             <div class="breakdown-item">
               <div class="breakdown-label">
-                <span class="dot blue"></span> Employees
+                <span class="dot" style="background: var(--blue);"></span> Employees
               </div>
               <div class="breakdown-bar-wrap">
-                <div class="breakdown-bar" [style.width.%]="getPercent(stats.employeeCount, stats.totalEmployees)" style="background:#3f51b5"></div>
+                <div class="breakdown-bar" [style.width.%]="getPercent(stats.employeeCount, stats.totalEmployees)" style="background: var(--blue);"></div>
               </div>
               <span class="breakdown-count">{{ stats.employeeCount }}</span>
             </div>
             <div class="breakdown-item">
               <div class="breakdown-label">
-                <span class="dot orange"></span> Managers
+                <span class="dot" style="background: var(--orange);"></span> Managers
               </div>
               <div class="breakdown-bar-wrap">
-                <div class="breakdown-bar" [style.width.%]="getPercent(stats.managerCount, stats.totalEmployees)" style="background:#e65100"></div>
+                <div class="breakdown-bar" [style.width.%]="getPercent(stats.managerCount, stats.totalEmployees)" style="background: var(--orange);"></div>
               </div>
               <span class="breakdown-count">{{ stats.managerCount }}</span>
             </div>
             <div class="breakdown-item">
               <div class="breakdown-label">
-                <span class="dot red"></span> Admins
+                <span class="dot" style="background: var(--danger);"></span> Admins
               </div>
               <div class="breakdown-bar-wrap">
-                <div class="breakdown-bar" [style.width.%]="getPercent(stats.adminCount, stats.totalEmployees)" style="background:#c62828"></div>
+                <div class="breakdown-bar" [style.width.%]="getPercent(stats.adminCount, stats.totalEmployees)" style="background: var(--danger);"></div>
               </div>
               <span class="breakdown-count">{{ stats.adminCount }}</span>
             </div>
@@ -108,10 +108,10 @@ import { EmployeeManagementService } from '../../core/services/employee-manageme
       <!-- Upcoming holidays -->
       <div>
         <h2>Upcoming Holidays</h2>
-        <mat-card>
-          <mat-card-content>
-            <div *ngFor="let h of upcomingHolidays" class="holiday-item">
-              <div>
+        <mat-card class="holidays-card">
+          <mat-card-content style="padding: 0;">
+            <div *ngFor="let h of upcomingHolidays; let last = last" class="holiday-item" [class.last]="last">
+              <div class="holiday-info">
                 <strong>{{ h.name }}</strong>
                 <p class="holiday-date">{{ h.date | date:'fullDate' }}</p>
               </div>
@@ -125,62 +125,51 @@ import { EmployeeManagementService } from '../../core/services/employee-manageme
 
     <h2>Quick Actions</h2>
     <div class="quick-actions">
-      <button mat-raised-button color="primary" routerLink="/admin/employees">
+      <button mat-stroked-button routerLink="/admin/employees">
         <mat-icon>person_add</mat-icon> Add Employee
       </button>
-      <button mat-raised-button color="accent" routerLink="/admin/departments">
+      <button mat-stroked-button routerLink="/admin/departments">
         <mat-icon>apartment</mat-icon> Manage Departments
       </button>
-      <button mat-raised-button routerLink="/admin/announcements">
+      <button mat-stroked-button routerLink="/admin/announcements">
         <mat-icon>campaign</mat-icon> Post Announcement
       </button>
-      <button mat-raised-button routerLink="/admin/holidays">
+      <button mat-stroked-button routerLink="/admin/holidays">
         <mat-icon>calendar_month</mat-icon> Manage Holidays
       </button>
-      <button mat-raised-button routerLink="/leave/approvals">
+      <button mat-stroked-button routerLink="/leave/approvals">
         <mat-icon>approval</mat-icon> Leave Approvals
       </button>
     </div>
 
     <style>
-      .page-header { margin-bottom: 24px; }
-      .page-header h1 { margin: 0; }
-      .page-header p { color: #666; margin: 4px 0 0; }
-      .stat-card mat-card-content { display: flex; align-items: center; gap: 16px; padding: 20px; }
-      .stat-icon { font-size: 40px; width: 40px; height: 40px; }
-      .stat-icon.blue { color: #3f51b5; }
-      .stat-icon.orange { color: #e65100; }
-      .stat-icon.purple { color: #6a1b9a; }
-      .stat-icon.green { color: #2e7d32; }
-      .stat-body { flex: 1; }
-      .stat-value { font-size: 32px; font-weight: 700; color: #222; line-height: 1; }
-      .stat-label { font-size: 14px; color: #666; margin: 4px 0 2px; }
-      .stat-sub { font-size: 12px; color: #999; }
-      .clickable { cursor: pointer; transition: box-shadow 0.2s; }
-      .clickable:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-      h2 { margin: 24px 0 16px; font-size: 18px; }
+      h2 { margin: 24px 0 14px; font-size: 17px; font-weight: 600; color: var(--text-1); }
+
+      .breakdown-card mat-card-content { padding: 20px; }
+      .breakdown-item { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+      .breakdown-item:last-child { margin-bottom: 0; }
+      .breakdown-label { width: 90px; font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+      .breakdown-bar-wrap { flex: 1; height: 7px; background: var(--bg-elevated); border-radius: 4px; overflow: hidden; }
+      .breakdown-bar { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+      .breakdown-count { font-weight: 700; font-size: 14px; color: var(--text-1); width: 28px; text-align: right; }
+
+      .holidays-card { overflow: hidden; }
+      .holiday-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+      .holiday-item.last { border-bottom: none; }
+      .holiday-info strong { font-size: 14px; color: var(--text-1); display: block; }
+      .holiday-date { color: var(--text-3); font-size: 12px; margin: 3px 0 0; }
+
+      .type-badge { padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+      .type-national { background: var(--blue-bg); color: var(--blue); }
+      .type-regional { background: var(--success-bg); color: var(--success); }
+      .type-optional { background: var(--warning-bg); color: var(--warning); }
+      .type-company { background: var(--purple-bg); color: var(--purple); }
+
+      .empty-msg { color: var(--text-3); text-align: center; padding: 20px; font-size: 14px; }
+
       .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 0 0 24px; }
       @media (max-width: 768px) { .section-grid { grid-template-columns: 1fr; } }
-      .breakdown-card mat-card-content { padding: 16px; }
-      .breakdown-item { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-      .breakdown-label { width: 90px; font-size: 13px; display: flex; align-items: center; gap: 6px; }
-      .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-      .dot.blue { background: #3f51b5; }
-      .dot.orange { background: #e65100; }
-      .dot.red { background: #c62828; }
-      .breakdown-bar-wrap { flex: 1; height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
-      .breakdown-bar { height: 100%; border-radius: 4px; transition: width 0.5s; }
-      .breakdown-count { font-weight: 600; font-size: 14px; width: 28px; text-align: right; }
-      .holiday-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
-      .holiday-item:last-child { border-bottom: none; }
-      .holiday-date { color: #666; font-size: 12px; margin: 2px 0 0; }
-      .type-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-      .type-national { background: #e3f2fd; color: #1565c0; }
-      .type-regional { background: #e8f5e9; color: #2e7d32; }
-      .type-optional { background: #fff9c4; color: #f57f17; }
-      .type-company { background: #f3e5f5; color: #6a1b9a; }
-      .empty-msg { color: #999; text-align: center; padding: 16px; }
-      .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; }
     </style>
   `
 })

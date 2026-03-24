@@ -31,7 +31,10 @@ import { LeaveType, LeaveBalance } from '../../../core/models/leave.model';
       <!-- Balance Summary Cards -->
       <div class="balance-section">
         <h3>Your Leave Balances</h3>
-        <div *ngFor="let b of balances" class="balance-card" [class.selected]="selectedBalance?.leaveTypeId === b.leaveTypeId" (click)="selectBalance(b)">
+        <div *ngFor="let b of balances"
+             class="balance-card"
+             [class.selected]="selectedBalance?.leaveTypeId === b.leaveTypeId"
+             (click)="selectBalance(b)">
           <div class="balance-header">
             <span class="balance-name">{{ b.leaveTypeName }}</span>
             <span class="balance-days" [class.low]="b.remainingDays <= 2">
@@ -62,7 +65,7 @@ import { LeaveType, LeaveBalance } from '../../../core/models/leave.model';
 
             <!-- Selected balance info -->
             <div *ngIf="selectedBalance" class="balance-info-inline">
-              <mat-icon [style.color]="selectedBalance.remainingDays > 0 ? '#2e7d32' : '#c62828'">
+              <mat-icon [style.color]="selectedBalance.remainingDays > 0 ? 'var(--success)' : 'var(--danger)'">
                 {{ selectedBalance.remainingDays > 0 ? 'check_circle' : 'warning' }}
               </mat-icon>
               <span>
@@ -106,10 +109,10 @@ import { LeaveType, LeaveBalance } from '../../../core/models/leave.model';
             </mat-form-field>
 
             <div class="form-actions">
-              <button mat-button type="button" (click)="router.navigate(['/leave/list'])">Cancel</button>
-              <button mat-raised-button color="primary" type="submit"
+              <button mat-button type="button" class="cancel-btn" (click)="router.navigate(['/leave/list'])">Cancel</button>
+              <button mat-raised-button class="submit-btn" type="submit"
                 [disabled]="leaveForm.invalid || loading || isOverBalance">
-                {{ loading ? 'Submitting...' : 'Submit Application' }}
+                {{ loading ? 'Submitting…' : 'Submit Application' }}
               </button>
             </div>
           </form>
@@ -118,35 +121,146 @@ import { LeaveType, LeaveBalance } from '../../../core/models/leave.model';
     </div>
 
     <style>
-      .page-header { margin-bottom: 24px; }
-      .page-header h1 { margin: 0; }
-      .page-header p { color: #666; margin: 4px 0 0; }
-      .apply-layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
-      @media (max-width: 768px) { .apply-layout { grid-template-columns: 1fr; } }
-      h3 { margin: 0 0 12px; font-size: 15px; color: #333; }
-      .balance-card { padding: 10px 12px; border-radius: 8px; border: 2px solid #e0e0e0; margin-bottom: 8px;
-        cursor: pointer; transition: all 0.2s; background: white; }
-      .balance-card:hover { border-color: #3f51b5; }
-      .balance-card.selected { border-color: #3f51b5; background: #f0f3ff; }
-      .balance-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-      .balance-name { font-size: 13px; font-weight: 500; color: #333; }
-      .balance-days { font-size: 18px; font-weight: 700; color: #3f51b5; }
-      .balance-days.low { color: #f44336; }
-      .balance-days small { font-size: 12px; color: #666; font-weight: normal; }
-      .balance-used { font-size: 11px; color: #888; display: block; margin-top: 4px; }
-      .no-balance { display: flex; flex-direction: column; align-items: center; color: #999; padding: 16px; text-align: center; }
-      .no-balance mat-icon { color: #bbb; margin-bottom: 8px; }
+      .apply-layout {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      @media (max-width: 768px) {
+        .apply-layout { grid-template-columns: 1fr; }
+      }
+      h3 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-3);
+      }
+      .balance-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px;
+        cursor: pointer;
+        transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+        background: var(--bg-card);
+        margin-bottom: 8px;
+      }
+      .balance-card:hover {
+        border-color: var(--primary);
+        background: var(--bg-elevated);
+      }
+      .balance-card.selected {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px var(--primary-glow);
+        background: var(--bg-elevated);
+      }
+      .balance-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .balance-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-1);
+      }
+      .balance-days {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary);
+      }
+      .balance-days.low { color: var(--danger); }
+      .balance-days small {
+        font-size: 12px;
+        color: var(--text-3);
+        font-weight: 400;
+      }
+      .balance-used {
+        font-size: 11px;
+        color: var(--text-3);
+        display: block;
+        margin-top: 6px;
+      }
+      .no-balance {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: var(--text-3);
+        padding: 16px;
+        text-align: center;
+      }
+      .no-balance mat-icon {
+        color: var(--text-3);
+        margin-bottom: 8px;
+      }
+      .form-card {
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+        box-shadow: var(--shadow) !important;
+      }
       .full-width { width: 100%; }
-      .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-      .balance-info-inline { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-        background: #f5f5f5; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
-      .days-summary { display: flex; align-items: center; gap: 8px; padding: 8px 12px;
-        background: #e8f5e9; border-radius: 6px; margin-bottom: 12px; font-size: 13px; }
-      .days-summary mat-icon { color: #2e7d32; }
-      .days-summary.over-limit { background: #fff3e0; }
-      .days-summary.over-limit mat-icon { color: #e65100; }
-      .over-warning { color: #e65100; font-weight: 500; }
-      .form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+      .date-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .balance-info-inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .balance-info-inline mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+      }
+      .days-summary {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: var(--success-bg);
+        border: 1px solid var(--success);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        font-size: 13px;
+        color: var(--text-2);
+      }
+      .days-summary mat-icon { color: var(--success); }
+      .days-summary.over-limit {
+        background: var(--warning-bg);
+        border-color: var(--warning);
+      }
+      .days-summary.over-limit mat-icon { color: var(--warning); }
+      .over-warning {
+        color: var(--warning);
+        font-weight: 600;
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .cancel-btn {
+        color: var(--text-2) !important;
+      }
+      .submit-btn {
+        background: var(--primary) !important;
+        color: #fff !important;
+      }
     </style>
   `
 })

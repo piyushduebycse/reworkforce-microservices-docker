@@ -14,30 +14,157 @@ import { Notification } from '../../../core/models/notification.model';
   template: `
     <div class="page-header">
       <h1>Notifications</h1>
-      <button mat-button (click)="markAllRead()">Mark All Read</button>
+      <button class="mark-all-btn" (click)="markAllRead()">
+        <mat-icon>done_all</mat-icon>
+        Mark All Read
+      </button>
     </div>
-    <mat-card>
-      <mat-list>
-        <mat-list-item *ngFor="let n of notifications" [class.unread]="!n.isRead">
-          <mat-icon matListItemIcon [color]="!n.isRead ? 'primary' : ''">
-            {{ getIcon(n.type) }}
-          </mat-icon>
-          <div matListItemTitle>{{ n.title }}</div>
-          <div matListItemLine>{{ n.message }}</div>
-          <div matListItemLine class="time">{{ n.createdAt | date:'medium' }}</div>
-          <button mat-icon-button *ngIf="!n.isRead" (click)="markRead(n.id)">
-            <mat-icon>done</mat-icon>
-          </button>
-        </mat-list-item>
-      </mat-list>
-      <p *ngIf="notifications.length === 0" class="empty-state">No notifications</p>
-    </mat-card>
+
+    <div class="notif-list">
+      <div *ngFor="let n of notifications"
+           class="notif-row"
+           [class.unread]="!n.isRead">
+        <div class="notif-icon-wrap" [class.unread-icon]="!n.isRead">
+          <mat-icon>{{ getIcon(n.type) }}</mat-icon>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title">{{ n.title }}</div>
+          <div class="notif-message">{{ n.message }}</div>
+          <div class="notif-time">{{ n.createdAt | date:'medium' }}</div>
+        </div>
+        <button *ngIf="!n.isRead" class="mark-read-btn" (click)="markRead(n.id)" title="Mark as read">
+          <mat-icon>done</mat-icon>
+        </button>
+      </div>
+
+      <div *ngIf="notifications.length === 0" class="empty-state">
+        <mat-icon>notifications_none</mat-icon>
+        <p>You're all caught up — no notifications.</p>
+      </div>
+    </div>
   `,
   styles: [`
-    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    .unread { background: #e8eaf6; }
-    .time { color: #999; font-size: 11px !important; }
-    .empty-state { text-align: center; color: #999; padding: 48px; }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .mark-all-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-2);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mark-all-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .mark-all-btn mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+    .notif-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .notif-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      transition: background 0.15s;
+    }
+    .notif-row:hover { background: var(--bg-elevated); }
+    .notif-row.unread {
+      border-left: 3px solid var(--primary);
+      background: var(--bg-elevated);
+    }
+    .notif-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-3);
+    }
+    .notif-icon-wrap.unread-icon {
+      background: var(--primary-glow);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .notif-icon-wrap mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .notif-body { flex: 1; }
+    .notif-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-1);
+      margin-bottom: 2px;
+    }
+    .notif-message {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 4px;
+    }
+    .notif-time {
+      font-size: 11px;
+      color: var(--text-3);
+    }
+    .mark-read-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 50%;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .mark-read-btn:hover {
+      color: var(--success);
+      background: var(--success-bg);
+    }
+    .mark-read-btn mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 56px 24px;
+      color: var(--text-3);
+    }
+    .empty-state mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      display: block;
+      margin: 0 auto 12px;
+    }
   `]
 })
 export class NotificationPanelComponent implements OnInit {
