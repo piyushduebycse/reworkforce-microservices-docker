@@ -13,12 +13,21 @@ A production-grade **Human Resource Management System** built with **Spring Boot
 5. [Prerequisites](#prerequisites)
 6. [Option A — Docker Setup (Recommended)](#option-a--docker-setup-recommended)
 7. [Option B — Local Setup (Without Docker)](#option-b--local-setup-without-docker)
+   - [Step 1 — Clone the Repository](#step-1--clone-the-repository)
+   - [Step 2 — Set Up MySQL](#step-2--set-up-mysql)
+   - [Step 3 — Create Databases](#step-3--create-databases)
+   - [Step 4 — Run the Schema](#step-4--run-the-schema)
+   - [Step 5 — Build Backend JARs](#step-5--build-backend-jars)
+   - [Step 6 — Start Services in Order](#step-6--start-services-in-order)
+   - [Step 7 — Start the Frontend](#step-7--start-the-frontend)
+   - [Step 8 — Verify Everything is Running](#step-8--verify-everything-is-running)
 8. [Demo Credentials](#demo-credentials)
 9. [All Service URLs](#all-service-urls)
 10. [API Reference](#api-reference)
 11. [Running Tests](#running-tests)
-12. [Troubleshooting](#troubleshooting)
-13. [Future Improvements](#future-improvements)
+12. [Troubleshooting — Local Setup](#troubleshooting--local-setup)
+13. [Troubleshooting — Docker Setup](#troubleshooting--docker-setup)
+14. [Future Improvements](#future-improvements)
 
 ---
 
@@ -70,7 +79,7 @@ A production-grade **Human Resource Management System** built with **Spring Boot
               │user-service │  │    ││  │  leave-service      │
               │    8081     │  │    ││  │      8082           │
               │Auth · Users │  │ CB ││  │ Applications·Quota  │
-              └─────────────┘  │    ││  └────────────────────-┘
+              └─────────────┘  │    ││  └─────────────────────┘
                                │    ││
               ┌────────────────▼┐   ││  ┌─────────────────────┐
               │performance-svc  │   ││  │employee-mgmt-svc    │
@@ -134,62 +143,36 @@ A production-grade **Human Resource Management System** built with **Spring Boot
 ```
 RevWorkforce/
 ├── README.md
+├── PROJECT_GUIDE.md                   # Full project explanation + 35 interview Q&As
 ├── .gitignore
 │
 ├── .github/
-│   ├── README.md                          # Interview-focused deep-dive guide
+│   ├── README.md                      # Interview-focused deep-dive guide
 │   └── workflows/
-│       └── ci-cd.yml                      # GitHub Actions CI/CD pipeline
+│       └── ci-cd.yml                  # GitHub Actions CI/CD pipeline
 │
 ├── backend/
-│   ├── pom.xml                            # Parent POM — all 9 modules
-│   ├── service-discovery/                 # Eureka Server (port 8761)
-│   ├── config-server/                     # Spring Cloud Config Server (port 8888)
+│   ├── pom.xml                        # Parent POM — all 9 modules
+│   ├── service-discovery/             # Eureka Server (port 8761)
+│   ├── config-server/                 # Spring Cloud Config Server (port 8888)
 │   │   └── src/main/resources/config-repo/  # ← Per-service YAML configs
-│   ├── api-gateway/                       # API Gateway (port 8080)
-│   │   └── filter/
-│   │       ├── JwtAuthenticationFilter    # Validates JWT, injects X-User-Id header
-│   │       └── BlockInternalRoutesFilter  # Blocks /api/internal/** externally
-│   ├── user-service/                      # Auth + User Management (port 8081)
-│   ├── leave-service/                     # Leave Management (port 8082)
-│   ├── performance-service/               # Reviews & Goals (port 8083)
-│   ├── employee-management-service/       # Departments, Designations, Announcements (port 8084)
-│   ├── reporting-service/                 # HR Analytics (port 8085)
-│   └── notification-service/             # In-App Notifications (port 8086)
+│   ├── api-gateway/                   # API Gateway (port 8080)
+│   ├── user-service/                  # Auth + User Management (port 8081)
+│   ├── leave-service/                 # Leave Management (port 8082)
+│   ├── performance-service/           # Reviews & Goals (port 8083)
+│   ├── employee-management-service/   # Departments, Designations, Announcements (port 8084)
+│   ├── reporting-service/             # HR Analytics (port 8085)
+│   └── notification-service/         # In-App Notifications (port 8086)
 │
 ├── frontend/
-│   └── revworkforce-ui/                   # Angular 17 SPA
-│       ├── src/
-│       │   ├── styles.scss                # Global dark theme + CSS custom properties
-│       │   ├── index.html                 # Inter font import
-│       │   └── app/
-│       │       ├── core/
-│       │       │   ├── guards/            # authGuard, roleGuard (functional)
-│       │       │   ├── interceptors/      # auth.interceptor — auto-attaches JWT
-│       │       │   ├── models/            # TypeScript interfaces
-│       │       │   └── services/          # HTTP service wrappers
-│       │       ├── features/
-│       │       │   ├── auth/              # Login (split-panel dark), unauthorized
-│       │       │   ├── employee-dashboard/
-│       │       │   ├── manager-dashboard/
-│       │       │   ├── admin-dashboard/
-│       │       │   ├── leave/             # apply, list, balance, approval
-│       │       │   ├── performance/       # review-list, review-form, goal-list
-│       │       │   ├── admin/             # employee-mgmt (dept+desig+filters),
-│       │       │   │                      # dept-mgmt, announcements, leave-balance-admin,
-│       │       │   │                      # holiday-mgmt
-│       │       │   ├── directory/
-│       │       │   ├── profile/
-│       │       │   └── notifications/
-│       │       └── shared/
-│       │           └── components/layout/ # Dark sidebar + topbar
-│       ├── nginx.conf
-│       └── Dockerfile
+│   └── revworkforce-ui/               # Angular 17 SPA
+│       ├── src/styles.scss            # Global dark theme + CSS custom properties
+│       └── ...
 │
 └── docker/
-    ├── docker-compose.yml                 # Full-stack orchestration (10 containers)
-    ├── init.sql                           # Creates 6 MySQL databases
-    └── schema.sql                         # DDL for all tables + seed data
+    ├── docker-compose.yml             # Full-stack orchestration (10 containers)
+    ├── init.sql                       # Creates 6 MySQL databases
+    └── schema.sql                     # DDL for all tables + seed data
 ```
 
 ---
@@ -204,7 +187,7 @@ RevWorkforce/
 | Docker Desktop | 4.0+ | `docker --version` | https://www.docker.com/products/docker-desktop |
 | Docker Compose | 2.0+ | `docker compose version` | Included in Docker Desktop |
 
-> **Docker Memory:** Go to **Docker Desktop → Settings → Resources → Memory** and set to **6 GB minimum** (8 GB recommended). Building 9 Spring Boot services requires it.
+> **Docker Memory:** Go to **Docker Desktop → Settings → Resources → Memory** and set to **6 GB minimum** (8 GB recommended).
 
 ---
 
@@ -213,11 +196,13 @@ RevWorkforce/
 | Tool | Minimum Version | How to Check | Download |
 |------|----------------|--------------|----------|
 | Git | Any | `git --version` | https://git-scm.com |
-| Java JDK | 17 | `java -version` | https://adoptium.net (Temurin 17) |
+| Java JDK | **17 exactly** | `java -version` | https://adoptium.net (Temurin 17) |
 | Maven | 3.9+ | `mvn -version` | https://maven.apache.org/download.cgi |
 | Node.js | 18+ | `node -version` | https://nodejs.org |
 | npm | 9+ | `npm -version` | Included with Node.js |
-| MySQL | 8.0 | `mysql --version` | https://dev.mysql.com/downloads/mysql |
+| MySQL | **8.0** | `mysql --version` | https://dev.mysql.com/downloads/mysql |
+
+> **Important:** Java must be version **17**. Spring Boot 3 does not work with Java 11 or Java 8. Run `java -version` to confirm.
 
 ---
 
@@ -280,69 +265,308 @@ docker compose up --build user-service -d  # Rebuild single service
 
 ## Option B — Local Setup (Without Docker)
 
-### Step 1 — Clone
+> Follow every step in order. Skipping or reordering steps is the most common cause of errors.
+
+### Step 1 — Clone the Repository
 
 ```bash
 git clone https://github.com/piyushduebycse/reworkforce-microservices-docker.git
 cd reworkforce-microservices-docker
 ```
 
-### Step 2 — Set up MySQL
+---
 
-**Set root password to `revworkforce@123`**, then create the 6 databases:
+### Step 2 — Set Up MySQL
+
+Make sure MySQL 8.0 is installed and running on port **3306**.
+
+**Verify MySQL is running:**
 
 ```bash
 # Windows
-mysql -u root -prevworkforce@123 < docker/init.sql
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
 
 # macOS / Linux
-mysql -u root -p'revworkforce@123' < docker/init.sql
+mysql -u root -p
 ```
 
-### Step 3 — Build all backend JARs
+If you can log in, MySQL is running. Type `exit` to quit.
+
+**If MySQL is not in your PATH (Windows), add it:**
+
+1. Search for **Environment Variables** in Windows Start menu
+2. Edit `Path` under System Variables
+3. Add: `C:\Program Files\MySQL\MySQL Server 8.0\bin`
+4. Restart your terminal
+
+After adding to PATH, you can use `mysql` directly:
+```bash
+mysql -u root -p
+```
+
+---
+
+### Step 3 — Create Databases
+
+Run `init.sql` to create the 6 required databases:
+
+**Windows (full path):**
+```bash
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < docker/init.sql
+```
+
+**Windows (if MySQL is in PATH):**
+```bash
+mysql -u root -p < docker/init.sql
+```
+
+**macOS / Linux:**
+```bash
+mysql -u root -p < docker/init.sql
+```
+
+Enter your MySQL root password when prompted.
+
+**Verify the databases were created:**
+```sql
+mysql -u root -p
+SHOW DATABASES;
+```
+
+You should see all 6:
+```
+revworkforce_users_db
+revworkforce_leaves_db
+revworkforce_performance_db
+revworkforce_employee_mgmt_db
+revworkforce_reporting_db
+revworkforce_notifications_db
+```
+
+---
+
+### Step 4 — Run the Schema
+
+> **IMPORTANT — Read before running:**
+>
+> `schema.sql` creates all tables and inserts seed data.
+> If you previously ran any Spring Boot service, JPA may have auto-created tables already — this can cause conflicts.
+> Follow the correct procedure below to avoid errors.
+
+#### Clean setup (first time, no services run yet)
+
+```bash
+# Windows (full path)
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p < docker/schema.sql
+
+# Windows (if MySQL is in PATH)
+mysql -u root -p < docker/schema.sql
+
+# macOS / Linux
+mysql -u root -p < docker/schema.sql
+```
+
+#### If you already ran services before running schema.sql
+
+JPA auto-creates tables from entity classes on startup. These tables may be missing columns that `schema.sql` expects (like `holiday_type`). Fix it by dropping and recreating all databases:
+
+```bash
+# Step 1 — Wipe and recreate all 6 databases
+mysql -u root -p < docker/init.sql
+
+# Step 2 — Now run schema (tables are empty, no conflicts)
+mysql -u root -p < docker/schema.sql
+```
+
+#### If you get `ERROR 1054: Unknown column 'holiday_type'`
+
+This means the `company_holidays` table was created by JPA without the `holiday_type` column. Two options:
+
+**Option 1 — Quick fix (add the missing column):**
+```sql
+mysql -u root -p
+
+USE revworkforce_leaves_db;
+ALTER TABLE company_holidays ADD COLUMN holiday_type VARCHAR(50) DEFAULT 'NATIONAL';
+exit
+```
+Then re-run schema.sql:
+```bash
+mysql -u root -p < docker/schema.sql
+```
+
+**Option 2 — Clean start (recommended):**
+```bash
+mysql -u root -p < docker/init.sql
+mysql -u root -p < docker/schema.sql
+```
+
+---
+
+### Step 5 — Build Backend JARs
+
+Build all 9 Spring Boot services with one command:
 
 ```bash
 cd backend
 mvn clean package -DskipTests
 ```
 
-### Step 4 — Start services in order
+> This downloads all Maven dependencies (~200MB first time). Subsequent builds are much faster.
+>
+> Expected output at the end:
+> ```
+> [INFO] BUILD SUCCESS
+> [INFO] Total time: 2-5 minutes
+> ```
 
-Open 9 terminals and start in this exact order:
+**If `mvn` is not recognized:**
+- Download Maven from https://maven.apache.org/download.cgi
+- Extract and add the `bin` folder to your system PATH
+- Or use the Maven wrapper if present: `./mvnw clean package -DskipTests`
+
+---
+
+### Step 6 — Start Services in Order
+
+> **Critical:** Services must start in this exact order due to dependencies.
+> Open a **separate terminal window** for each service and keep them all running.
+
+#### Terminal 1 — Eureka (Service Discovery)
 
 ```bash
-# 1. Eureka — wait for http://localhost:8761
-cd backend/service-discovery && mvn spring-boot:run
-
-# 2. Config Server — wait for http://localhost:8888/user-service/default
-cd backend/config-server && mvn spring-boot:run
-
-# 3–8. Business services (separate terminals each)
-cd backend/user-service                && mvn spring-boot:run -Dspring-boot.run.profiles=local
-cd backend/leave-service               && mvn spring-boot:run -Dspring-boot.run.profiles=local
-cd backend/performance-service         && mvn spring-boot:run -Dspring-boot.run.profiles=local
-cd backend/employee-management-service && mvn spring-boot:run -Dspring-boot.run.profiles=local
-cd backend/reporting-service           && mvn spring-boot:run -Dspring-boot.run.profiles=local
-cd backend/notification-service        && mvn spring-boot:run -Dspring-boot.run.profiles=local
-
-# 9. API Gateway — start last
-cd backend/api-gateway && mvn spring-boot:run
+cd backend/service-discovery
+mvn spring-boot:run
 ```
 
-### Step 5 — Start Angular frontend
+Wait until you see:
+```
+Started ServiceDiscoveryApplication in X seconds
+```
+Then open **http://localhost:8761** in your browser — you should see the Eureka dashboard.
+
+---
+
+#### Terminal 2 — Config Server
+
+```bash
+cd backend/config-server
+mvn spring-boot:run
+```
+
+Wait until you see:
+```
+Started ConfigServerApplication in X seconds
+```
+Verify: open **http://localhost:8888/user-service/default** — should return JSON config.
+
+---
+
+#### Terminal 3 — User Service
+
+```bash
+cd backend/user-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Wait for:
+```
+Started UserServiceApplication in X seconds
+```
+
+---
+
+#### Terminal 4 — Leave Service
+
+```bash
+cd backend/leave-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+#### Terminal 5 — Performance Service
+
+```bash
+cd backend/performance-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+#### Terminal 6 — Employee Management Service
+
+```bash
+cd backend/employee-management-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+#### Terminal 7 — Reporting Service
+
+```bash
+cd backend/reporting-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+#### Terminal 8 — Notification Service
+
+```bash
+cd backend/notification-service
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+---
+
+#### Terminal 9 — API Gateway (start last)
+
+```bash
+cd backend/api-gateway
+mvn spring-boot:run
+```
+
+Wait for:
+```
+Started ApiGatewayApplication in X seconds
+```
+
+---
+
+### Step 7 — Start the Frontend
+
+Open a new terminal:
 
 ```bash
 cd frontend/revworkforce-ui
 npm install
 npm start
-# Opens at http://localhost:4200
 ```
+
+> `npm install` downloads ~1,200 packages (~300MB). Only needed the first time.
+>
+> The app will open at **http://localhost:4200**
+
+---
+
+### Step 8 — Verify Everything is Running
+
+1. **Eureka Dashboard** → http://localhost:8761
+   - Should show 6 services registered: USER-SERVICE, LEAVE-SERVICE, PERFORMANCE-SERVICE, EMPLOYEE-MANAGEMENT-SERVICE, REPORTING-SERVICE, NOTIFICATION-SERVICE
+
+2. **API Gateway health** → http://localhost:8080/actuator/health
+   - Should return `{"status":"UP"}`
+
+3. **Frontend** → http://localhost:4200
+   - Login with `admin@revworkforce.com` / `Admin@123`
 
 ---
 
 ## Demo Credentials
 
-Seeded automatically on first startup:
+Seeded automatically on first startup (`-Dspring-boot.run.profiles=dev`):
 
 | Role | Email | Password | Access |
 |------|-------|----------|--------|
@@ -355,7 +579,7 @@ Seeded automatically on first startup:
 | **EMPLOYEE** | employee4@revworkforce.com | Employee@123 | Reports to manager2 |
 | **EMPLOYEE** | employee5@revworkforce.com | Employee@123 | Reports to manager2 |
 
-> **Note:** The login page includes a **clickable demo accounts panel** — click any account to auto-fill credentials.
+> **Note:** The login page includes a **clickable demo accounts panel** — click any account to auto-fill credentials instantly.
 
 ---
 
@@ -367,14 +591,14 @@ Seeded automatically on first startup:
 | **API Gateway** | http://localhost:8080 | Single entry point for all API calls |
 | **Eureka Dashboard** | http://localhost:8761 | View all registered services |
 | **Config Server** | http://localhost:8888/user-service/default | View per-service config |
-| User Service | http://localhost:8081/actuator/health | |
-| Leave Service | http://localhost:8082/actuator/health | |
-| Performance Service | http://localhost:8083/actuator/health | |
-| Employee Mgmt Service | http://localhost:8084/actuator/health | |
-| Reporting Service | http://localhost:8085/actuator/health | |
-| Notification Service | http://localhost:8086/actuator/health | |
+| User Service | http://localhost:8081/actuator/health | Health check |
+| Leave Service | http://localhost:8082/actuator/health | Health check |
+| Performance Service | http://localhost:8083/actuator/health | Health check |
+| Employee Mgmt Service | http://localhost:8084/actuator/health | Health check |
+| Reporting Service | http://localhost:8085/actuator/health | Health check |
+| Notification Service | http://localhost:8086/actuator/health | Health check |
 
-> All API calls go through **port 8080**. Never call individual service ports directly from the browser.
+> All API calls go through **port 8080** (gateway). Never call individual service ports directly from the browser.
 
 ---
 
@@ -410,7 +634,6 @@ PUT    /api/profiles/me              [All]   Update own profile
 ### Leave Management
 
 ```
-# Applications
 POST /api/leaves/applications               [EMPLOYEE] Apply for leave
 GET  /api/leaves/applications/me            [All]      My applications
 GET  /api/leaves/applications/team          [MANAGER]  Team applications
@@ -419,57 +642,22 @@ PUT  /api/leaves/applications/{id}/approve  [MANAGER]  Approve leave
 PUT  /api/leaves/applications/{id}/reject   [MANAGER]  Reject leave
 PUT  /api/leaves/applications/{id}/cancel   [EMPLOYEE] Cancel own leave
 
-# Balances
-GET  /api/leaves/balances/me                                          [All]   My balances
-GET  /api/leaves/balances/user/{id}?year=                             [ADMIN] User balances
-PUT  /api/leaves/balances/user/{id}?leaveTypeId=&totalDays=&year=     [ADMIN] Set balance
-POST /api/leaves/balances/user/{id}/init?role=&year=                  [ADMIN] Init from quota
-POST /api/leaves/balances/admin/initialize                            [ADMIN] Bulk initialize
-
-# Leave Types & Quotas
-GET    /api/leaves/types              [All]   All leave types
-POST   /api/leaves/types              [ADMIN] Create leave type
-PUT    /api/leaves/types/{id}         [ADMIN] Update leave type
-GET    /api/leaves/quotas?year=       [ADMIN] Get all quotas
-POST   /api/leaves/quotas             [ADMIN] Create/update quota
-DELETE /api/leaves/quotas/{id}        [ADMIN] Delete quota
-
-# Holidays
-GET    /api/leaves/holidays           [All]   All holidays
-GET    /api/leaves/holidays/upcoming  [All]   Upcoming holidays
-POST   /api/leaves/holidays           [ADMIN] Add holiday
-PUT    /api/leaves/holidays/{id}      [ADMIN] Update holiday
-DELETE /api/leaves/holidays/{id}      [ADMIN] Delete holiday
+GET  /api/leaves/balances/me                [All]   My balances
+GET  /api/leaves/types                      [All]   All leave types
+GET  /api/leaves/holidays/upcoming          [All]   Upcoming holidays
 ```
 
 ### Performance
 
 ```
-POST /api/performance/reviews               [EMPLOYEE/MANAGER] Submit self-review
-GET  /api/performance/reviews/me            [All]     My reviews
+POST /api/performance/reviews               Submit self-review
+GET  /api/performance/reviews/me            My reviews
 GET  /api/performance/reviews/team          [MANAGER] Team reviews
 PUT  /api/performance/reviews/{id}/feedback [MANAGER] Add rating + feedback
 
-GET  /api/performance/goals/me              [All]     My goals
-GET  /api/performance/goals/team            [MANAGER] Team goals
-POST /api/performance/goals                 [All]     Create goal
-PUT  /api/performance/goals/{id}/progress   [All]     Update progress (0–100)
-PUT  /api/performance/goals/{id}/status     [All]     Update status
-```
-
-### Departments & Announcements
-
-```
-GET    /api/departments                     [All]   All departments
-POST   /api/departments                     [ADMIN] Create department
-PUT    /api/departments/{id}                [ADMIN] Update department
-PUT    /api/departments/{id}/activate       [ADMIN] Activate
-PUT    /api/departments/{id}/deactivate     [ADMIN] Deactivate
-GET    /api/designations?departmentId=      [All]   Designations (optionally by dept)
-GET    /api/announcements                   [All]   All active announcements
-POST   /api/announcements                   [ADMIN] Publish announcement
-PUT    /api/announcements/{id}              [ADMIN] Update announcement
-DELETE /api/announcements/{id}              [ADMIN] Delete announcement
+GET  /api/performance/goals/me              My goals
+POST /api/performance/goals                 Create goal
+PUT  /api/performance/goals/{id}/progress   Update progress (0–100)
 ```
 
 ### Reports (Admin/Manager only)
@@ -485,11 +673,10 @@ GET /api/reports/goal-completion       Goal completion rates
 ### Notifications
 
 ```
-GET    /api/notifications/me           My notifications (paginated)
+GET    /api/notifications/me           My notifications
 GET    /api/notifications/unread-count Number of unread
 PUT    /api/notifications/{id}/read    Mark one as read
 PUT    /api/notifications/read-all     Mark all as read
-DELETE /api/notifications/{id}         Delete notification
 ```
 
 ---
@@ -501,7 +688,7 @@ DELETE /api/notifications/{id}         Delete notification
 cd backend
 mvn test
 
-# Specific service
+# Specific service only
 cd backend/leave-service
 mvn test
 
@@ -509,15 +696,412 @@ mvn test
 cd frontend/revworkforce-ui
 npm test
 
-# Frontend lint
+# Frontend lint check
 npm run lint
 ```
 
 ---
 
-## Troubleshooting
+## Troubleshooting — Local Setup
 
-### Docker Issues
+### MySQL Issues
+
+---
+
+#### `mysql` command not found / not recognized
+
+MySQL is not in your system PATH.
+
+**Windows — use the full path:**
+```bash
+"C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
+```
+
+**Or add MySQL to PATH permanently:**
+1. Open **Start → Search "Environment Variables"**
+2. Click **Environment Variables**
+3. Under **System Variables**, find `Path` → click **Edit**
+4. Click **New** → add: `C:\Program Files\MySQL\MySQL Server 8.0\bin`
+5. Click OK → restart your terminal
+
+---
+
+#### `Access denied for user 'root'@'localhost'`
+
+Your MySQL root password is wrong or not set.
+
+**Reset the root password:**
+```sql
+-- Open MySQL as root (try with no password first)
+mysql -u root
+
+-- If that works, set the password:
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'revworkforce@123';
+FLUSH PRIVILEGES;
+exit
+```
+
+**If you cannot log in at all (forgot root password):**
+
+1. Stop MySQL service:
+   - Windows: `net stop MySQL80` (in admin terminal)
+   - macOS: `brew services stop mysql`
+2. Start MySQL without auth: `mysqld --skip-grant-tables`
+3. Connect: `mysql -u root`
+4. Reset: `ALTER USER 'root'@'localhost' IDENTIFIED BY 'revworkforce@123'; FLUSH PRIVILEGES;`
+5. Restart MySQL normally
+
+---
+
+#### `Unknown database 'revworkforce_users_db'`
+
+The databases haven't been created yet. Run `init.sql`:
+
+```bash
+mysql -u root -p < docker/init.sql
+```
+
+Verify:
+```sql
+mysql -u root -p
+SHOW DATABASES;
+```
+
+---
+
+#### `ERROR 1054 (42S22): Unknown column 'holiday_type' in field list`
+
+This happens when Spring Boot services ran before `schema.sql` — JPA created the `company_holidays` table without the `holiday_type` column, and now `schema.sql` tries to insert data with that column.
+
+**Fix — clean start (recommended):**
+```bash
+# Drop and recreate all 6 databases
+mysql -u root -p < docker/init.sql
+
+# Now run schema on fresh empty databases
+mysql -u root -p < docker/schema.sql
+```
+
+**Fix — quick patch (add the missing column only):**
+```sql
+mysql -u root -p
+
+USE revworkforce_leaves_db;
+ALTER TABLE company_holidays ADD COLUMN holiday_type VARCHAR(50) DEFAULT 'NATIONAL';
+exit
+```
+Then re-run:
+```bash
+mysql -u root -p < docker/schema.sql
+```
+
+---
+
+#### `ERROR 1062: Duplicate entry` when running schema.sql
+
+Some seed data rows already exist in the database. The schema uses `INSERT IGNORE` which should skip duplicates. If you still get errors, do a clean start:
+
+```bash
+mysql -u root -p < docker/init.sql
+mysql -u root -p < docker/schema.sql
+```
+
+---
+
+#### `Can't connect to MySQL server on 'localhost'` (from Spring Boot)
+
+MySQL is not running.
+
+**Windows — start MySQL:**
+```bash
+# In an Administrator terminal
+net start MySQL80
+```
+
+**macOS:**
+```bash
+brew services start mysql
+# or
+sudo /usr/local/mysql/support-files/mysql.server start
+```
+
+**Linux:**
+```bash
+sudo systemctl start mysql
+```
+
+---
+
+### Maven / Build Issues
+
+---
+
+#### `mvn` is not recognized
+
+Maven is not installed or not in PATH.
+
+**Install Maven:**
+1. Download from https://maven.apache.org/download.cgi (binary zip)
+2. Extract to e.g. `C:\Program Files\Apache\maven`
+3. Add `C:\Program Files\Apache\maven\bin` to System PATH
+4. Restart terminal → `mvn -version` should work
+
+---
+
+#### `java: error: release version 17 not supported` or `UnsupportedClassVersionError`
+
+Wrong Java version. Spring Boot 3 requires Java 17.
+
+**Check current version:**
+```bash
+java -version
+```
+
+**If wrong version — install Java 17:**
+- Download Temurin 17: https://adoptium.net
+- Install it
+- Set `JAVA_HOME` to the Java 17 installation path
+- Make sure `java -version` shows `17`
+
+**Windows — set JAVA_HOME:**
+1. Environment Variables → System Variables → New
+2. Name: `JAVA_HOME`
+3. Value: `C:\Program Files\Eclipse Adoptium\jdk-17.x.x.x-hotspot`
+4. Edit `Path` → Add: `%JAVA_HOME%\bin`
+5. Restart terminal
+
+---
+
+#### `BUILD FAILURE` — `Could not resolve dependencies`
+
+Maven cannot download dependencies (no internet or proxy issue).
+
+**Check internet connection, then:**
+```bash
+cd backend
+mvn clean package -DskipTests -U
+```
+The `-U` flag forces Maven to re-download snapshots and check for updates.
+
+**Behind a corporate proxy — add to `~/.m2/settings.xml`:**
+```xml
+<settings>
+  <proxies>
+    <proxy>
+      <id>corporate</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>your.proxy.host</host>
+      <port>8080</port>
+    </proxy>
+  </proxies>
+</settings>
+```
+
+---
+
+#### `Port 8080 / 8081 / 8082... is already in use`
+
+Another process is using that port.
+
+**Windows — find and kill the process:**
+```bash
+# Find what is using port 8081
+netstat -ano | findstr :8081
+
+# Kill by PID (replace 12345 with the actual PID)
+taskkill /PID 12345 /F
+```
+
+**macOS / Linux:**
+```bash
+lsof -i :8081
+kill -9 <PID>
+```
+
+**Or — change the port in application config:**
+```yaml
+# backend/user-service/src/main/resources/application.yml
+server:
+  port: 8091   # Change to any free port
+```
+
+---
+
+### Spring Boot Startup Issues
+
+---
+
+#### `Could not connect to config server` / `Connection refused` on startup
+
+Config Server is not running or Eureka is not ready yet.
+
+**Solution — always start in this exact order:**
+1. MySQL (already running)
+2. Eureka (`service-discovery`) — wait for port 8761 to respond
+3. Config Server — wait for port 8888 to respond
+4. All other services
+5. API Gateway last
+
+Wait at least **30–60 seconds** after Eureka starts before launching other services.
+
+---
+
+#### Service starts but immediately stops / crashes
+
+Check the terminal for the error. Most common causes:
+
+**Can't reach Config Server:**
+```
+Could not locate PropertySource, the config server may be down
+```
+→ Config Server is not running. Start it first and wait for it.
+
+**Database connection refused:**
+```
+HikariPool-1 - Exception during pool initialization... Connection refused
+```
+→ MySQL is not running or wrong password. Start MySQL and verify credentials.
+
+**Port already in use:**
+```
+Web server failed to start. Port 8081 was already in use.
+```
+→ Kill the process using that port (see above).
+
+---
+
+#### `Unable to find @SpringBootConfiguration` during `mvn test`
+
+You're running `mvn test` from a parent directory that isn't a Spring Boot project.
+
+```bash
+# Run from the specific service directory
+cd backend/user-service
+mvn test
+```
+
+---
+
+#### Services start but Eureka shows them as DOWN
+
+Give services 30–60 seconds to register. Eureka has a heartbeat delay.
+
+If a service shows DOWN after 2 minutes:
+```bash
+# Check its health endpoint
+curl http://localhost:8081/actuator/health
+```
+
+If you get a response, it's fine — Eureka just hasn't updated yet.
+
+---
+
+### Frontend Issues
+
+---
+
+#### `npm install` fails with permission errors
+
+**Windows:**
+```bash
+# Run terminal as Administrator, then:
+npm install --force
+```
+
+**macOS / Linux:**
+```bash
+sudo npm install
+```
+
+---
+
+#### `npm install` is very slow or hangs
+
+Clear npm cache and retry:
+```bash
+npm cache clean --force
+npm install
+```
+
+---
+
+#### `Node.js version is not supported`
+
+Check your Node version:
+```bash
+node -version
+```
+
+Must be **18 or higher**. Download from https://nodejs.org (LTS version).
+
+---
+
+#### Angular app loads but all API calls fail (Network Error / 0 status)
+
+The API Gateway is not running. Make sure all 9 backend services are running first, especially the API Gateway on port 8080.
+
+Check:
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+If connection refused → start the gateway.
+
+---
+
+#### `ENOENT: no such file or directory, open 'package.json'`
+
+You're in the wrong directory. Make sure you're inside `frontend/revworkforce-ui`:
+
+```bash
+cd frontend/revworkforce-ui
+npm install
+npm start
+```
+
+---
+
+#### Login works but dashboard shows blank / no data
+
+Services are running but leave balances haven't been initialized.
+
+1. Login as **Admin** (`admin@revworkforce.com` / `Admin@123`)
+2. Go to **Leave Configuration** → **Employee Balances** tab
+3. Click **Apply Quota to All**
+
+This initializes leave balances for all employees.
+
+---
+
+#### Performance reviews show `Team Member` instead of employee name
+
+The employee has no manager assigned.
+
+1. Login as **Admin**
+2. Go to **Employee Management**
+3. Edit each employee → assign a manager
+4. Refresh the review list
+
+---
+
+#### Reporting dashboard shows all zeros
+
+All 6 services must be registered in Eureka. Open **http://localhost:8761** — verify all appear as UP. If any service is missing, check its terminal for errors and restart it.
+
+---
+
+#### Frontend shows a blank white page
+
+Open browser DevTools (F12) → Console tab. Check for errors.
+
+Most common cause — Angular build error. Check the terminal running `npm start` for compilation errors.
+
+---
+
+## Troubleshooting — Docker Setup
+
+---
 
 #### `port is already allocated` when running `docker compose up`
 
@@ -533,16 +1117,17 @@ lsof -i :8080
 kill -9 <pid>
 ```
 
-Or change the host port in `docker/docker-compose.yml` (`"8090:8080"`).
+Or change the host port in `docker/docker-compose.yml` (e.g., `"8090:8080"`).
 
 ---
 
 #### Services restart in a loop / `Unable to connect to config server`
 
-Start infrastructure first, then the rest:
+Start infrastructure containers first, then wait before starting the rest:
+
 ```bash
 docker compose up service-discovery config-server mysql -d
-# Wait ~60s, then:
+# Wait 60 seconds, then:
 docker compose up -d
 ```
 
@@ -550,11 +1135,11 @@ docker compose up -d
 
 #### `Out of memory` / build killed mid-way
 
-Docker Desktop → Settings → Resources → Memory → **8 GB**
+Docker Desktop → Settings → Resources → Memory → **8 GB** → Apply & Restart
 
 ---
 
-#### Frontend shows blank page
+#### Frontend shows blank page (Docker)
 
 ```bash
 docker compose logs frontend
@@ -563,46 +1148,12 @@ docker compose up frontend --build -d
 
 ---
 
-### Local Setup Issues
-
-#### `Could not connect to config server`
-
-Always start in order: MySQL → Eureka → Config Server → business services → API Gateway → frontend.
-
----
-
-#### `Access denied for user 'root'@'localhost'`
-
-```sql
-ALTER USER 'root'@'localhost' IDENTIFIED BY 'revworkforce@123';
-FLUSH PRIVILEGES;
-```
-
----
-
-#### `Unknown database 'revworkforce_users_db'`
+#### Want a completely fresh start (reset all data)
 
 ```bash
-mysql -u root -p'revworkforce@123' < docker/init.sql
+docker compose down -v    # Stops containers and deletes all volumes (database data wiped)
+docker compose up --build -d
 ```
-
----
-
-#### Leave balance not found when applying for leave
-
-Log in as Admin → **Leave Configuration** → **Employee Balances** tab → **Apply Quota to All**.
-
----
-
-#### Performance reviews show no manager / `Employee #N` in team reviews
-
-Log in as Admin → **Employee Management** → edit the employee and assign a manager. The review list resolves names from the user directory — if a user has no manager assigned, team reviews may show a fallback label.
-
----
-
-#### Reporting dashboard shows all zeros
-
-All 6 services must be registered in Eureka at **http://localhost:8761**. Refresh the dashboard after all show as `UP`.
 
 ---
 
@@ -630,7 +1181,6 @@ All 6 services must be registered in Eureka at **http://localhost:8761**. Refres
 | **Export to PDF/Excel** | Export reports and leave history |
 | **Profile Photo Upload** | Allow employees to upload profile pictures |
 | **Multi-language (i18n)** | Support for multiple languages via Angular i18n |
-| **Mobile App** | Companion React Native / Flutter app using the existing REST APIs |
 
 ### Infrastructure
 
@@ -639,7 +1189,6 @@ All 6 services must be registered in Eureka at **http://localhost:8761**. Refres
 | **Kubernetes (K8s)** | Replace Docker Compose with Helm charts for production |
 | **AWS / GCP Deployment** | Deploy to EKS or GKE with RDS managed MySQL |
 | **Monitoring Stack** | Prometheus + Grafana dashboards for service metrics |
-| **Config via Git** | Move Config Server to a Git-backed repository |
 | **SSL / HTTPS** | TLS termination at the gateway with Let's Encrypt |
 
 ---
