@@ -1,98 +1,131 @@
-
-
-
 # RevWorkforce — Cloud-Native HRM Platform
 
-A production-grade **Human Resource Management System** built with **Spring Boot 3 microservices**, **Angular 17**, and **Spring Cloud** infrastructure. Designed to demonstrate real-world enterprise architecture patterns.
+A production-grade **Human Resource Management System** built with **Spring Boot 3 microservices**, **Angular 17**, and **Spring Cloud** infrastructure. Features a fully modernized dark-themed UI, 9 independent backend services, 6 isolated MySQL databases, JWT authentication, and role-based access control.
 
 ---
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Technology Stack](#technology-stack)
-3. [Folder Structure](#folder-structure)
-4. [Database Schema](#database-schema)
-5. [Setup & Running Guide](#setup--running-guide)
-   - [Prerequisites](#prerequisites)
-   - [Option A — Docker Compose (Recommended)](#option-a--docker-compose-recommended)
-   - [Option B — Manual Local Run](#option-b--manual-local-run)
-   - [Option C — Frontend Only (Mock)](#option-c--frontend-only-mock)
-6. [API Reference](#api-reference)
-7. [Demo Credentials](#demo-credentials)
-8. [Interview Presentation Guide](#interview-presentation-guide)
+1. [Features](#features)
+2. [Architecture Overview](#architecture-overview)
+3. [Technology Stack](#technology-stack)
+4. [Folder Structure](#folder-structure)
+5. [Prerequisites](#prerequisites)
+6. [Option A — Docker Setup (Recommended)](#option-a--docker-setup-recommended)
+7. [Option B — Local Setup (Without Docker)](#option-b--local-setup-without-docker)
+8. [Demo Credentials](#demo-credentials)
+9. [All Service URLs](#all-service-urls)
+10. [API Reference](#api-reference)
+11. [Running Tests](#running-tests)
+12. [Troubleshooting](#troubleshooting)
+13. [Future Improvements](#future-improvements)
+
+---
+
+## Features
+
+### For Employees
+- Personalized dashboard — leave balances with progress bars, recent applications, active goals, upcoming holidays, announcements
+- Apply for leave with date picker, leave type selection, balance preview, and reason
+- View own leave history and application status
+- Submit self-performance reviews with star rating and comments
+- Create and track personal goals with progress updates (0–100%)
+- Receive in-app notifications for leave approvals/rejections
+
+### For Managers
+- All employee features plus:
+- Team Overview dashboard — team headcount, pending approvals count, upcoming holidays
+- Approve or reject employee leave requests with comments
+- View all team leave applications
+- Provide star ratings and written feedback on employee self-reviews
+- View team goals and their progress
+
+### For Admins
+- HR Dashboard with company-wide metrics (total employees, pending approvals, departments, upcoming holidays)
+- Employee Management — add new employees with department/designation assignment, activate/deactivate accounts, filter by role/department/status/search
+- Department Management — create, edit, activate/deactivate departments
+- Leave Configuration — manage leave types, set default quotas per role, view and edit per-employee balances
+- Holiday Management — add and manage company holidays with types (National, Regional, Optional, Company)
+- Announcements — publish announcements targeted to all, employees, managers, or admins
+- Reports — headcount by department, leave utilization, performance summary, goal completion rates
 
 ---
 
 ## Architecture Overview
 
 ```
-                          ┌─────────────────────────────────┐
-                          │        Angular 17 Frontend       │
-                          │       http://localhost:4200      │
-                          └──────────────┬──────────────────┘
-                                         │ HTTP /api/**
-                          ┌──────────────▼──────────────────┐
-                          │        API Gateway (8080)        │
-                          │  JWT Filter · Rate Limit · CB    │
-                          └──┬──────┬──────┬──────┬─────────┘
-                             │      │      │      │
-           ┌─────────────────▼─┐  ┌─▼──┐  │  ┌──▼──────────────────┐
-           │  user-service 8081│  │    │  │  │  leave-service 8082  │
-           │  Auth · Users     │  │ CB │  │  │  Applications·Balance│
-           └─────────────────┬─┘  └────┘  │  └────────────┬─────────┘
-                             │             │               │
-              ┌──────────────▼─┐     ┌─────▼──────────────▼──┐
-              │ performance-   │     │  employee-management- │
-              │ service  8083  │     │  service  8084        │
-              │ Reviews · Goals│     │  Dept · Desig · Annc  │
-              └────────────────┘     └───────────────────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          │                  │                  │
-   ┌──────▼──────┐  ┌────────▼──────┐  ┌───────▼──────┐
-   │ reporting-  │  │notification-  │  │Config Server │
-   │ service 8085│  │service   8086 │  │port 8888     │
-   │ HR Dashboard│  │Push Alerts    │  └──────────────┘
-   └─────────────┘  └───────────────┘
-                                         ┌─────────────┐
-                                         │   Eureka    │
-                                         │  port 8761  │
-                                         └─────────────┘
+                        ┌────────────────────────────────┐
+                        │      Angular 17 Frontend        │
+                        │      http://localhost:4200      │
+                        │   Dark Theme · Inter Font       │
+                        └──────────────┬─────────────────┘
+                                       │ HTTP /api/**
+                        ┌──────────────▼─────────────────┐
+                        │       API Gateway (8080)         │
+                        │  JWT Validation · Block /internal│
+                        │  Circuit Breaker · Load Balance  │
+                        └──┬────┬────┬────┬────┬──────────┘
+                           │    │    │    │    │
+              ┌────────────▼┐  ┌▼───┐│  ┌▼────▼──────────────┐
+              │user-service │  │    ││  │  leave-service      │
+              │    8081     │  │    ││  │      8082           │
+              │Auth · Users │  │ CB ││  │ Applications·Quota  │
+              └─────────────┘  │    ││  └────────────────────-┘
+                               │    ││
+              ┌────────────────▼┐   ││  ┌─────────────────────┐
+              │performance-svc  │   ││  │employee-mgmt-svc    │
+              │    8083         │   ││  │     8084            │
+              │Reviews · Goals  │   ││  │Dept·Annc·Desig      │
+              └─────────────────┘   ││  └─────────────────────┘
+                                    ││
+              ┌─────────────────┐   ││  ┌─────────────────────┐
+              │reporting-svc    │   ││  │notification-svc     │
+              │    8085         │   ││  │     8086            │
+              │HR Analytics     │   ││  │In-App Alerts        │
+              └─────────────────┘   ││  └─────────────────────┘
+                                    ││
+              ┌─────────────────────▼┐  ┌─────────────────────┐
+              │   Config Server      │  │   Eureka Server     │
+              │       8888           │  │       8761          │
+              │ Centralized Config   │  │ Service Discovery   │
+              └──────────────────────┘  └─────────────────────┘
 ```
 
-### Key Patterns Used
+### Key Architecture Patterns
+
 | Pattern | Implementation |
 |---------|---------------|
-| **Service Discovery** | Netflix Eureka — all services self-register |
-| **Centralized Config** | Spring Cloud Config Server (native/classpath profile) |
-| **API Gateway** | Spring Cloud Gateway with JWT validation filter |
-| **Circuit Breaker** | Resilience4j on all gateway routes with fallback |
-| **Inter-Service Calls** | OpenFeign with JWT header propagation |
-| **Database per Service** | 6 separate MySQL databases |
-| **JWT Auth** | JJWT HS256, 24h access + 7d refresh tokens |
-| **Role-Based Access** | Spring Security `@PreAuthorize` + Angular route guards |
+| **Service Discovery** | Netflix Eureka — all services self-register, no hardcoded URLs |
+| **Centralized Config** | Spring Cloud Config Server — one YAML per service in `config-repo/` |
+| **API Gateway** | Spring Cloud Gateway — single entry point with JWT filter |
+| **Circuit Breaker** | Resilience4j on all gateway routes — returns friendly fallback on failure |
+| **Inter-Service Calls** | OpenFeign with JWT header propagation via `RequestInterceptor` |
+| **Database per Service** | 6 separate MySQL databases — no shared tables |
+| **JWT Auth** | JJWT HS256 — 24h access token + 7d refresh token |
+| **Role-Based Access** | Spring Security `@PreAuthorize` + Angular `roleGuard` on routes |
+| **Block Internal Routes** | Gateway rejects any external call to `/api/internal/**` with 403 |
 
 ---
 
 ## Technology Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Java 17, TypeScript 5 |
-| Backend Framework | Spring Boot 3.2.3 |
-| Cloud Infrastructure | Spring Cloud 2023.0.0 |
-| Service Discovery | Netflix Eureka |
-| API Gateway | Spring Cloud Gateway (Reactive) |
-| Inter-Service Comms | OpenFeign + Resilience4j |
-| Security | Spring Security + JJWT 0.11.5 |
-| ORM | Spring Data JPA + Hibernate |
-| Database | MySQL 8.0 |
-| Frontend | Angular 17 (Standalone Components) |
-| UI Library | Angular Material |
-| Build Tool | Maven (Multi-module), npm |
-| Containerization | Docker + Docker Compose |
-| CI/CD | GitHub Actions |
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Language | Java, TypeScript | Java 17, TS 5 |
+| Backend Framework | Spring Boot | 3.2.3 |
+| Cloud Infrastructure | Spring Cloud | 2023.0.0 |
+| Service Discovery | Netflix Eureka | — |
+| API Gateway | Spring Cloud Gateway (Reactive) | — |
+| Circuit Breaker | Resilience4j | — |
+| Inter-Service Comms | OpenFeign | — |
+| Security | Spring Security + JJWT | 0.11.5 |
+| ORM | Spring Data JPA + Hibernate | — |
+| Database | MySQL | 8.0 |
+| Frontend | Angular (Standalone Components) | 17 |
+| UI Library | Angular Material | 17 |
+| UI Font | Inter | 300–800 |
+| Build Tool | Maven (Multi-module), npm | 3.9+, 9+ |
+| Containerization | Docker + Docker Compose | — |
 
 ---
 
@@ -101,735 +134,362 @@ A production-grade **Human Resource Management System** built with **Spring Boot
 ```
 RevWorkforce/
 ├── README.md
+├── .gitignore
+│
 ├── .github/
+│   ├── README.md                          # Interview-focused deep-dive guide
 │   └── workflows/
-│       └── ci-cd.yml                   # GitHub Actions — build, test, docker
+│       └── ci-cd.yml                      # GitHub Actions CI/CD pipeline
 │
 ├── backend/
-│   ├── pom.xml                         # Parent POM — all 9 modules declared
-│   │
-│   ├── service-discovery/              # Eureka Server (port 8761)
-│   │   ├── src/main/java/com/revworkforce/servicediscovery/
-│   │   │   └── ServiceDiscoveryApplication.java
-│   │   ├── src/main/resources/application.yml
-│   │   ├── pom.xml
-│   │   └── Dockerfile
-│   │
-│   ├── config-server/                  # Spring Cloud Config Server (port 8888)
-│   │   ├── src/main/java/com/revworkforce/configserver/
-│   │   │   └── ConfigServerApplication.java
-│   │   ├── src/main/resources/
-│   │   │   ├── application.yml
-│   │   │   └── config-repo/            # ← All service configs live here
-│   │   │       ├── user-service.yml
-│   │   │       ├── leave-service.yml
-│   │   │       ├── performance-service.yml
-│   │   │       ├── employee-management-service.yml
-│   │   │       ├── reporting-service.yml
-│   │   │       ├── notification-service.yml
-│   │   │       └── api-gateway.yml
-│   │   ├── pom.xml
-│   │   └── Dockerfile
-│   │
-│   ├── api-gateway/                    # API Gateway (port 8080)
-│   │   ├── src/main/java/com/revworkforce/apigateway/
-│   │   │   ├── ApiGatewayApplication.java
-│   │   │   ├── filter/
-│   │   │   │   ├── JwtAuthenticationFilter.java   # Validates JWT, injects headers
-│   │   │   │   └── BlockInternalRoutesFilter.java # 403 for /api/internal/**
-│   │   │   └── controller/
-│   │   │       └── FallbackController.java        # Circuit breaker fallbacks
-│   │   ├── src/main/resources/application.yml
-│   │   ├── pom.xml
-│   │   └── Dockerfile
-│   │
-│   ├── user-service/                   # Auth + User Management (port 8081)
-│   │   ├── src/main/java/com/revworkforce/userservice/
-│   │   │   ├── UserServiceApplication.java
-│   │   │   ├── controller/
-│   │   │   │   ├── AuthController.java            # /api/auth/*
-│   │   │   │   ├── UserController.java            # /api/users/*, /api/profiles/*
-│   │   │   │   └── InternalUserController.java    # /api/internal/users/* (Feign)
-│   │   │   ├── service/
-│   │   │   │   ├── UserService.java
-│   │   │   │   └── UserServiceImpl.java
-│   │   │   ├── entity/
-│   │   │   │   ├── User.java
-│   │   │   │   └── Role.java (enum)
-│   │   │   ├── dto/                               # Request/Response DTOs
-│   │   │   ├── repository/
-│   │   │   │   └── UserRepository.java
-│   │   │   ├── security/
-│   │   │   │   ├── JwtTokenProvider.java
-│   │   │   │   ├── JwtAuthenticationFilter.java
-│   │   │   │   └── SecurityConfig.java
-│   │   │   ├── exception/
-│   │   │   │   └── GlobalExceptionHandler.java
-│   │   │   └── config/
-│   │   │       └── DataInitializer.java           # @Profile("dev") seed data
-│   │   ├── src/test/java/...
-│   │   │   ├── service/UserServiceImplTest.java
-│   │   │   └── controller/AuthControllerTest.java
-│   │   ├── pom.xml
-│   │   └── Dockerfile
-│   │
-│   ├── leave-service/                  # Leave Management (port 8082)
-│   │   ├── src/main/java/com/revworkforce/leaveservice/
-│   │   │   ├── entity/                            # LeaveApplication, LeaveType,
-│   │   │   │                                      # LeaveBalance, CompanyHoliday, LeaveQuota
-│   │   │   ├── controller/
-│   │   │   │   ├── LeaveController.java           # /api/leaves/*
-│   │   │   │   ├── LeaveTypeController.java
-│   │   │   │   ├── LeaveBalanceController.java
-│   │   │   │   └── HolidayController.java
-│   │   │   ├── feign/
-│   │   │   │   ├── UserServiceClient.java         # Feign → user-service
-│   │   │   │   └── NotificationServiceClient.java # Feign → notification-service
-│   │   │   └── config/
-│   │   │       └── FeignClientConfig.java         # JWT header forwarding
-│   │   ├── src/test/.../LeaveServiceImplTest.java
-│   │   ├── pom.xml
-│   │   └── Dockerfile
-│   │
-│   ├── performance-service/            # Performance Reviews & Goals (port 8083)
-│   │   ├── entity/                    # ReviewCycle, PerformanceReview, Goal
-│   │   ├── controller/
-│   │   │   ├── ReviewCycleController.java
-│   │   │   ├── PerformanceReviewController.java
-│   │   │   └── GoalController.java
-│   │   ├── src/test/.../PerformanceServiceImplTest.java
-│   │   └── ...
-│   │
-│   ├── employee-management-service/   # Dept, Designations, Announcements (port 8084)
-│   │   ├── entity/                    # Department, Designation, Announcement
-│   │   ├── controller/
-│   │   │   ├── DepartmentController.java
-│   │   │   ├── DesignationController.java
-│   │   │   └── AnnouncementController.java
-│   │   ├── feign/
-│   │   │   └── UserServiceClient.java
-│   │   ├── src/test/.../DepartmentControllerTest.java
-│   │   └── ...
-│   │
-│   ├── reporting-service/             # HR Analytics Dashboard (port 8085)
-│   │   ├── controller/
-│   │   │   └── ReportController.java  # /api/reports/dashboard, /headcount, etc.
-│   │   ├── feign/
-│   │   │   ├── UserServiceClient.java
-│   │   │   └── LeaveServiceClient.java
-│   │   └── ...
-│   │
-│   └── notification-service/          # In-App Notifications (port 8086)
-│       ├── entity/                    # Notification, NotificationType
-│       ├── controller/
-│       │   └── NotificationController.java  # /api/notifications/me
-│       └── ...
+│   ├── pom.xml                            # Parent POM — all 9 modules
+│   ├── service-discovery/                 # Eureka Server (port 8761)
+│   ├── config-server/                     # Spring Cloud Config Server (port 8888)
+│   │   └── src/main/resources/config-repo/  # ← Per-service YAML configs
+│   ├── api-gateway/                       # API Gateway (port 8080)
+│   │   └── filter/
+│   │       ├── JwtAuthenticationFilter    # Validates JWT, injects X-User-Id header
+│   │       └── BlockInternalRoutesFilter  # Blocks /api/internal/** externally
+│   ├── user-service/                      # Auth + User Management (port 8081)
+│   ├── leave-service/                     # Leave Management (port 8082)
+│   ├── performance-service/               # Reviews & Goals (port 8083)
+│   ├── employee-management-service/       # Departments, Designations, Announcements (port 8084)
+│   ├── reporting-service/                 # HR Analytics (port 8085)
+│   └── notification-service/             # In-App Notifications (port 8086)
 │
 ├── frontend/
-│   └── revworkforce-ui/               # Angular 17 Application
-│       ├── angular.json
-│       ├── package.json
-│       ├── tsconfig.json
-│       ├── nginx.conf                 # SPA routing + /api proxy
-│       ├── Dockerfile                 # Node builder → nginx alpine
-│       └── src/
-│           ├── index.html
-│           ├── main.ts
-│           ├── styles.scss
-│           ├── environments/
-│           │   ├── environment.ts
-│           │   └── environment.prod.ts
-│           └── app/
-│               ├── app.component.ts
-│               ├── app.config.ts      # provideHttpClient, provideRouter
-│               ├── app.routes.ts      # Lazy-loaded routes with guards
-│               ├── core/
-│               │   ├── guards/
-│               │   │   ├── auth.guard.ts           # CanActivateFn
-│               │   │   └── role.guard.ts           # role-based guard
-│               │   ├── interceptors/
-│               │   │   └── auth.interceptor.ts     # Attach Bearer token
-│               │   ├── models/
-│               │   │   ├── user.model.ts
-│               │   │   ├── leave.model.ts
-│               │   │   ├── performance.model.ts
-│               │   │   └── notification.model.ts
-│               │   └── services/
-│               │       ├── auth.service.ts
-│               │       ├── leave.service.ts
-│               │       ├── performance.service.ts
-│               │       ├── notification.service.ts
-│               │       └── user.service.ts
-│               ├── features/
-│               │   ├── auth/
-│               │   │   ├── login/login.component.ts
-│               │   │   └── unauthorized/unauthorized.component.ts
-│               │   ├── employee-dashboard/
-│               │   ├── manager-dashboard/
-│               │   ├── admin-dashboard/
-│               │   ├── leave/
-│               │   │   ├── leave-apply/
-│               │   │   ├── leave-list/
-│               │   │   ├── leave-balance/
-│               │   │   └── leave-approval/
-│               │   ├── performance/
-│               │   │   ├── review-list/
-│               │   │   ├── review-form/
-│               │   │   └── goal-list/
-│               │   ├── admin/
-│               │   │   ├── employee-management/
-│               │   │   ├── department-management/
-│               │   │   └── announcements/
-│               │   └── notifications/
-│               │       └── notification-panel/
-│               └── shared/
-│                   └── components/
-│                       └── layout/layout.component.ts  # Sidenav + topbar
+│   └── revworkforce-ui/                   # Angular 17 SPA
+│       ├── src/
+│       │   ├── styles.scss                # Global dark theme + CSS custom properties
+│       │   ├── index.html                 # Inter font import
+│       │   └── app/
+│       │       ├── core/
+│       │       │   ├── guards/            # authGuard, roleGuard (functional)
+│       │       │   ├── interceptors/      # auth.interceptor — auto-attaches JWT
+│       │       │   ├── models/            # TypeScript interfaces
+│       │       │   └── services/          # HTTP service wrappers
+│       │       ├── features/
+│       │       │   ├── auth/              # Login (split-panel dark), unauthorized
+│       │       │   ├── employee-dashboard/
+│       │       │   ├── manager-dashboard/
+│       │       │   ├── admin-dashboard/
+│       │       │   ├── leave/             # apply, list, balance, approval
+│       │       │   ├── performance/       # review-list, review-form, goal-list
+│       │       │   ├── admin/             # employee-mgmt (dept+desig+filters),
+│       │       │   │                      # dept-mgmt, announcements, leave-balance-admin,
+│       │       │   │                      # holiday-mgmt
+│       │       │   ├── directory/
+│       │       │   ├── profile/
+│       │       │   └── notifications/
+│       │       └── shared/
+│       │           └── components/layout/ # Dark sidebar + topbar
+│       ├── nginx.conf
+│       └── Dockerfile
 │
 └── docker/
-    ├── docker-compose.yml             # Full stack orchestration
-    ├── init.sql                       # Creates 6 MySQL databases
-    └── schema.sql                     # Complete DDL for all tables + seed data
+    ├── docker-compose.yml                 # Full-stack orchestration (10 containers)
+    ├── init.sql                           # Creates 6 MySQL databases
+    └── schema.sql                         # DDL for all tables + seed data
 ```
 
 ---
 
-## Database Schema
+## Prerequisites
 
-Six isolated databases following the **Database-per-Service** pattern:
+### For Docker Setup (Option A)
 
-| Database | Service | Tables |
-|----------|---------|--------|
-| `revworkforce_users_db` | user-service | `users` |
-| `revworkforce_leaves_db` | leave-service | `leave_types`, `leave_balances`, `leave_applications`, `company_holidays`, `leave_quotas` |
-| `revworkforce_performance_db` | performance-service | `review_cycles`, `performance_reviews`, `goals` |
-| `revworkforce_employee_mgmt_db` | employee-management-service | `departments`, `designations`, `announcements` |
-| `revworkforce_reporting_db` | reporting-service | `report_snapshots` (aggregated via Feign) |
-| `revworkforce_notifications_db` | notification-service | `notifications` |
+| Tool | Minimum Version | How to Check | Download |
+|------|----------------|--------------|----------|
+| Git | Any | `git --version` | https://git-scm.com |
+| Docker Desktop | 4.0+ | `docker --version` | https://www.docker.com/products/docker-desktop |
+| Docker Compose | 2.0+ | `docker compose version` | Included in Docker Desktop |
 
-> JPA `ddl-auto: update` creates tables automatically on first startup.
-> Run `docker/schema.sql` for explicit table creation with indexes and seed data.
+> **Docker Memory:** Go to **Docker Desktop → Settings → Resources → Memory** and set to **6 GB minimum** (8 GB recommended). Building 9 Spring Boot services requires it.
 
 ---
 
-## Setup & Running Guide
+### For Local Setup (Option B)
 
-### Prerequisites
-
-| Tool | Version | Check |
-|------|---------|-------|
-| Docker Desktop | ≥ 4.x | `docker --version` |
-| Docker Compose | ≥ 2.x | `docker compose version` |
-| Java JDK | 17 | `java -version` |
-| Maven | ≥ 3.9 | `mvn -version` |
-| Node.js | ≥ 18 | `node -version` |
-| npm | ≥ 9 | `npm -version` |
-| MySQL | 8.0 (local only) | `mysql --version` |
+| Tool | Minimum Version | How to Check | Download |
+|------|----------------|--------------|----------|
+| Git | Any | `git --version` | https://git-scm.com |
+| Java JDK | 17 | `java -version` | https://adoptium.net (Temurin 17) |
+| Maven | 3.9+ | `mvn -version` | https://maven.apache.org/download.cgi |
+| Node.js | 18+ | `node -version` | https://nodejs.org |
+| npm | 9+ | `npm -version` | Included with Node.js |
+| MySQL | 8.0 | `mysql --version` | https://dev.mysql.com/downloads/mysql |
 
 ---
 
-### Option A — Docker Compose (Recommended)
+## Option A — Docker Setup (Recommended)
 
-> Starts all 10 containers: MySQL, Eureka, Config Server, API Gateway, 6 services, Angular (nginx)
+### Step 1 — Clone the repository
 
-**Step 1 — Build backend JARs**
 ```bash
-cd E:\RevWorkforce\backend
-mvn clean package -DskipTests
+git clone https://github.com/piyushduebycse/reworkforce-microservices-docker.git
+cd reworkforce-microservices-docker
 ```
 
-**Step 2 — Start the full stack**
+### Step 2 — Increase Docker memory (one-time)
+
+Docker Desktop → Settings → Resources → Memory → **6 GB minimum** → Apply & Restart
+
+### Step 3 — Build and start all containers
+
 ```bash
-cd E:\RevWorkforce\docker
+cd docker
 docker compose up --build -d
 ```
 
-**Step 3 — Watch startup order (takes ~2-3 minutes)**
+> **First time:** ~5–10 minutes (Maven downloads all dependencies inside Docker).
+> **Subsequent runs:** `docker compose up -d` takes ~2–3 minutes.
+
+### Step 4 — Watch startup progress
+
 ```bash
 docker compose logs -f
-# Wait until you see: "Started UserServiceApplication", etc.
 ```
 
-**Step 4 — Monitor startup progress**
-```bash
-docker compose logs -f
-# Wait until you see "Started *Application" for each service (~3-5 min first time)
+Wait for all six service startup messages:
+```
+revworkforce-user-service        | Started UserServiceApplication in ...
+revworkforce-leave-service       | Started LeaveServiceApplication in ...
+revworkforce-performance-service | Started PerformanceServiceApplication in ...
+revworkforce-employee-management | Started EmployeeManagementApplication in ...
+revworkforce-reporting-service   | Started ReportingServiceApplication in ...
+revworkforce-notification-service| Started NotificationServiceApplication in ...
 ```
 
-**Step 5 — Access the application**
+### Step 5 — Verify and open
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:4200 |
-| API Gateway | http://localhost:8080 |
-| Eureka Dashboard | http://localhost:8761 |
-| Config Server | http://localhost:8888/user-service/default |
-| User Service | http://localhost:8081 |
-| Leave Service | http://localhost:8082 |
-| Performance Service | http://localhost:8083 |
-| Employee Mgmt Service | http://localhost:8084 |
-| Reporting Service | http://localhost:8085 |
-| Notification Service | http://localhost:8086 |
+- Eureka Dashboard → **http://localhost:8761** (all 6 services should show as UP)
+- Application → **http://localhost:4200**
 
-**Stop everything**
+### Useful Docker Commands
+
 ```bash
-docker compose down
-# To also remove volumes (reset DB):
-docker compose down -v
+docker compose ps                          # Status of all containers
+docker compose logs -f user-service        # Tail logs for a specific service
+docker compose restart user-service        # Restart one service
+docker compose down                        # Stop (data preserved)
+docker compose down -v                     # Stop + delete all data (fresh start)
+docker compose up --build user-service -d  # Rebuild single service
 ```
 
 ---
 
-### Option B — Manual Local Run
+## Option B — Local Setup (Without Docker)
 
-Run services in this exact order (startup dependency order):
+### Step 1 — Clone
 
-**Step 1 — Start MySQL locally**
 ```bash
-# Ensure MySQL 8 is running on port 3306
-# Create databases:
-mysql -u root -p < E:\RevWorkforce\docker\init.sql
-mysql -u root -p < E:\RevWorkforce\docker\schema.sql
+git clone https://github.com/piyushduebycse/reworkforce-microservices-docker.git
+cd reworkforce-microservices-docker
 ```
 
-**Step 2 — Start Eureka Server**
+### Step 2 — Set up MySQL
+
+**Set root password to `revworkforce@123`**, then create the 6 databases:
+
 ```bash
-cd E:\RevWorkforce\backend\service-discovery
-mvn spring-boot:run
-# Wait for: Started ServiceDiscoveryApplication on port 8761
+# Windows
+mysql -u root -prevworkforce@123 < docker/init.sql
+
+# macOS / Linux
+mysql -u root -p'revworkforce@123' < docker/init.sql
 ```
 
-**Step 3 — Start Config Server**
+### Step 3 — Build all backend JARs
+
 ```bash
-cd E:\RevWorkforce\backend\config-server
-mvn spring-boot:run
-# Wait for: Started ConfigServerApplication on port 8888
+cd backend
+mvn clean package -DskipTests
 ```
 
-**Step 4 — Start Business Services** (open separate terminals)
+### Step 4 — Start services in order
+
+Open 9 terminals and start in this exact order:
+
 ```bash
-# Terminal 1
-cd E:\RevWorkforce\backend\user-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# 1. Eureka — wait for http://localhost:8761
+cd backend/service-discovery && mvn spring-boot:run
 
-# Terminal 2
-cd E:\RevWorkforce\backend\leave-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# 2. Config Server — wait for http://localhost:8888/user-service/default
+cd backend/config-server && mvn spring-boot:run
 
-# Terminal 3
-cd E:\RevWorkforce\backend\performance-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# 3–8. Business services (separate terminals each)
+cd backend/user-service                && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend/leave-service               && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend/performance-service         && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend/employee-management-service && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend/reporting-service           && mvn spring-boot:run -Dspring-boot.run.profiles=local
+cd backend/notification-service        && mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Terminal 4
-cd E:\RevWorkforce\backend\employee-management-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-
-# Terminal 5
-cd E:\RevWorkforce\backend\reporting-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-
-# Terminal 6
-cd E:\RevWorkforce\backend\notification-service
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+# 9. API Gateway — start last
+cd backend/api-gateway && mvn spring-boot:run
 ```
 
-**Step 5 — Start API Gateway**
-```bash
-cd E:\RevWorkforce\backend\api-gateway
-mvn spring-boot:run
-```
+### Step 5 — Start Angular frontend
 
-**Step 6 — Start Angular Frontend**
 ```bash
-cd E:\RevWorkforce\frontend\revworkforce-ui
+cd frontend/revworkforce-ui
 npm install
 npm start
-# App runs on http://localhost:4200
-```
-
----
-
-### Option C — Frontend Only (Mock)
-
-If backend is not running, the Angular app still loads — just API calls will fail with 0/504.
-Use browser DevTools to inspect the JWT auth flow and routing logic.
-
----
-
-## API Reference
-
-### Authentication (`/api/auth`)
-```
-POST /api/auth/login              Body: { email, password }       → { token, refreshToken, user }
-POST /api/auth/register           [ADMIN only]                    → { user }
-POST /api/auth/refresh            Body: { refreshToken }          → { token }
-POST /api/auth/logout             [Authenticated]
-GET  /api/auth/me                 [Authenticated]                 → { user }
-```
-
-### Users (`/api/users`)
-```
-GET  /api/users                   [ADMIN] ?page=0&size=10         → Page<UserDto>
-GET  /api/users/directory         [All]                           → List<UserSummaryDto>
-GET  /api/users/search?query=     [All]                           → List<UserSummaryDto>
-PUT  /api/users/{id}              [ADMIN/self]                    → UserDto
-DELETE /api/users/{id}            [ADMIN]
-```
-
-### Leave Management (`/api/leaves`, `/api/leave-types`, `/api/leave-balances`)
-```
-POST /api/leaves                  Apply for leave
-GET  /api/leaves/my               My leave history
-GET  /api/leaves/pending          [MANAGER] Team pending approvals
-PUT  /api/leaves/{id}/approve     [MANAGER]
-PUT  /api/leaves/{id}/reject      [MANAGER]
-PUT  /api/leaves/{id}/cancel      [EMPLOYEE — own only]
-GET  /api/leave-balances/my       My current balances
-GET  /api/leave-types             All active leave types
-```
-
-### Performance (`/api/reviews`, `/api/goals`, `/api/review-cycles`)
-```
-POST /api/reviews                 Submit self-review
-GET  /api/reviews/my              My reviews
-PUT  /api/reviews/{id}/feedback   [MANAGER] Add feedback + rating
-GET  /api/goals/my                My goals
-POST /api/goals                   Create goal
-PUT  /api/goals/{id}/progress     Update progress (0-100)
-PUT  /api/goals/{id}/status       Update status
-```
-
-### Reports (`/api/reports`) — ADMIN/MANAGER only
-```
-GET  /api/reports/dashboard       HR Dashboard summary
-GET  /api/reports/headcount       Employee headcount by department
-GET  /api/reports/leave-utilization  Leave usage statistics
-GET  /api/reports/performance-summary  Review scores summary
-GET  /api/reports/goal-completion  Goal completion rates
-```
-
-### Notifications (`/api/notifications`)
-```
-GET  /api/notifications/me        My notifications (paginated)
-GET  /api/notifications/unread-count
-PUT  /api/notifications/{id}/read
-PUT  /api/notifications/read-all
-DELETE /api/notifications/{id}
+# Opens at http://localhost:4200
 ```
 
 ---
 
 ## Demo Credentials
 
-Seeded automatically when running with `spring.profiles.active=dev`:
+Seeded automatically on first startup:
 
-| Role | Email | Password | Features |
-|------|-------|----------|---------|
-| **ADMIN** | admin@revworkforce.com | Admin@123 | All features, user management, reports |
-| **MANAGER** | manager1@revworkforce.com | Manager@123 | Approve leaves, add review feedback, view team |
-| **MANAGER** | manager2@revworkforce.com | Manager@123 | Same as above |
+| Role | Email | Password | Access |
+|------|-------|----------|--------|
+| **ADMIN** | admin@revworkforce.com | Admin@123 | Full platform — employees, departments, leave config, reports |
+| **MANAGER** | manager1@revworkforce.com | Manager@123 | Team overview, leave approvals, performance feedback |
+| **MANAGER** | manager2@revworkforce.com | Manager@123 | Same as manager1 |
 | **EMPLOYEE** | employee1@revworkforce.com | Employee@123 | Apply leave, self-review, goals |
-| **EMPLOYEE** | employee2@revworkforce.com | Employee@123 | Same as above |
-| **EMPLOYEE** | employee3@revworkforce.com | Employee@123 | Same as above |
+| **EMPLOYEE** | employee2@revworkforce.com | Employee@123 | Same |
+| **EMPLOYEE** | employee3@revworkforce.com | Employee@123 | Same |
+| **EMPLOYEE** | employee4@revworkforce.com | Employee@123 | Reports to manager2 |
+| **EMPLOYEE** | employee5@revworkforce.com | Employee@123 | Reports to manager2 |
+
+> **Note:** The login page includes a **clickable demo accounts panel** — click any account to auto-fill credentials.
 
 ---
 
-## Interview Presentation Guide
+## All Service URLs
 
-### How to Open (60 seconds)
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Frontend** | http://localhost:4200 | Angular dark-theme UI |
+| **API Gateway** | http://localhost:8080 | Single entry point for all API calls |
+| **Eureka Dashboard** | http://localhost:8761 | View all registered services |
+| **Config Server** | http://localhost:8888/user-service/default | View per-service config |
+| User Service | http://localhost:8081/actuator/health | |
+| Leave Service | http://localhost:8082/actuator/health | |
+| Performance Service | http://localhost:8083/actuator/health | |
+| Employee Mgmt Service | http://localhost:8084/actuator/health | |
+| Reporting Service | http://localhost:8085/actuator/health | |
+| Notification Service | http://localhost:8086/actuator/health | |
 
-> *"I built RevWorkforce — a production-grade cloud-native HRM platform that demonstrates real enterprise microservices patterns. It's not a tutorial project; it uses the same architectural decisions you'd make in an actual team at scale."*
-
-Start by showing the **Eureka dashboard** at `http://localhost:8761` — all 6 services registered and healthy. This immediately proves the distributed system is live.
+> All API calls go through **port 8080**. Never call individual service ports directly from the browser.
 
 ---
 
-### Walking Through the Architecture (3-5 minutes)
+## API Reference
 
-**1. Show the folder structure** — point out:
-- Multi-module Maven parent POM — single `mvn package` builds all 9 artifacts
-- Each service is a self-contained Spring Boot app with its own DB, security config, and tests
-- Config Server's `config-repo/` folder — one YAML per service, all in one place
+All endpoints through `http://localhost:8080`. Include `Authorization: Bearer <token>` on all protected routes.
 
-**2. Open Eureka (`http://localhost:8761`)**
-- "Every service registers itself. The gateway discovers them dynamically — no hardcoded URLs."
+### Authentication
 
-**3. Show Config Server (`http://localhost:8888/user-service/default`)**
-- "Centralized config. Change a property once — all instances pick it up on refresh."
-
-**4. Demo the JWT flow live:**
-```bash
-# Login as admin
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@revworkforce.com","password":"Admin@123"}'
-
-# Copy the token, then:
-curl -H "Authorization: Bearer <token>" http://localhost:8080/api/users
 ```
-- "The gateway validates the JWT and injects X-User-Id, X-User-Role headers — services trust those headers, no DB lookup needed."
-
-**5. Try hitting an internal route:**
-```bash
-curl http://localhost:8080/api/internal/users/1
-# Returns 403 — BlockInternalRoutesFilter at work
+POST /api/auth/login          Body: { "email": "...", "password": "..." }
+                              Returns: { accessToken, refreshToken, userId, role, ... }
+POST /api/auth/register       [ADMIN only] Register a new user
+POST /api/auth/refresh        Body: { "refreshToken": "..." }  →  new accessToken
+GET  /api/auth/me             Returns current user info from token
 ```
 
----
+### Users
 
-### Demonstrating the Frontend (2-3 minutes)
-
-1. Go to `http://localhost:4200` → login as **admin**
-2. Show the **Admin Dashboard** → HR metrics aggregated from multiple services
-3. Logout → login as **employee**
-4. Apply a leave request — show form validation, date picker, balance check
-5. Logout → login as **manager**
-6. Show **Pending Approvals** — approve the leave
-7. Login back as employee → show the notification received
-
-**Key talking points:**
-- Angular 17 standalone components — no NgModules
-- Functional route guards (`authGuard`, `roleGuard`) — try navigating to `/admin` as an employee
-- HTTP interceptor auto-attaches JWT — no manual header setting anywhere in components
-
----
-
-### Deep-Dive Topics (Be Ready For These)
-
-**Q: Why separate databases per service?**
-> "Each service owns its data — no shared tables, no shared connections. leave-service never queries the users table directly; it calls user-service's internal API via Feign. This means each service can scale independently and be deployed separately."
-
-**Q: How does the leave approval update the balance?**
-> "In LeaveServiceImpl.approveLeave(): validate status is PENDING, call UserServiceClient to verify the manager has authority, then deduct from LeaveBalance. If the employee later cancels an approved leave, the balance is restored. This is optimistic — no distributed transactions; eventual consistency via application logic."
-
-**Q: How does JWT propagation between services work?**
-> "FeignClientConfig implements RequestInterceptor. Before every Feign call, it reads the Bearer token from the current ServletRequestAttributes and adds it as the Authorization header. So when leave-service calls user-service internally, it passes the user's original token."
-
-**Q: What happens if user-service is down and leave-service calls it?**
-> "Resilience4j circuit breaker on the gateway. After a threshold of failures, the circuit opens and requests get routed to FallbackController which returns a 503 JSON with a friendly message instead of a 500 cascade failure."
-
-**Q: How do you run tests?**
-```bash
-cd E:\RevWorkforce\backend
-mvn test
-# 7 test classes: UserServiceImplTest, AuthControllerTest,
-# LeaveServiceImplTest, PerformanceServiceImplTest,
-# DepartmentControllerTest, NotificationServiceImplTest,
-# ReportControllerTest
+```
+GET    /api/users                    [ADMIN] List all users (paginated)
+GET    /api/users/directory          [All]   Employee directory
+GET    /api/users/search?q=          [All]   Search users by name/email
+GET    /api/users/by-role?role=      [ADMIN] Filter by EMPLOYEE / MANAGER / ADMIN
+GET    /api/users/{id}               [All]   Get user by ID
+PUT    /api/users/{id}               [ADMIN] Update user details
+PUT    /api/users/{id}/activate      [ADMIN] Reactivate a deactivated user
+DELETE /api/users/{id}               [ADMIN] Deactivate user (soft delete)
+GET    /api/profiles/me              [All]   Get own profile
+PUT    /api/profiles/me              [All]   Update own profile
 ```
 
-**Q: How would you scale this to production?**
-> "Replace Config Server's native profile with a Git-backed repo for audit history. Add Kafka for async notification events instead of synchronous Feign calls. Replace the single MySQL with RDS per service. Add distributed tracing with Zipkin/Jaeger. The architecture is already set up for this — the contracts between services are Feign interfaces, not direct DB calls."
+### Leave Management
 
----
+```
+# Applications
+POST /api/leaves/applications               [EMPLOYEE] Apply for leave
+GET  /api/leaves/applications/me            [All]      My applications
+GET  /api/leaves/applications/team          [MANAGER]  Team applications
+GET  /api/leaves/applications/pending       [MANAGER]  Pending approvals
+PUT  /api/leaves/applications/{id}/approve  [MANAGER]  Approve leave
+PUT  /api/leaves/applications/{id}/reject   [MANAGER]  Reject leave
+PUT  /api/leaves/applications/{id}/cancel   [EMPLOYEE] Cancel own leave
 
-### Closing Statement
+# Balances
+GET  /api/leaves/balances/me                                          [All]   My balances
+GET  /api/leaves/balances/user/{id}?year=                             [ADMIN] User balances
+PUT  /api/leaves/balances/user/{id}?leaveTypeId=&totalDays=&year=     [ADMIN] Set balance
+POST /api/leaves/balances/user/{id}/init?role=&year=                  [ADMIN] Init from quota
+POST /api/leaves/balances/admin/initialize                            [ADMIN] Bulk initialize
 
-> *"Every layer here maps to a real production concern — centralized config for operations, circuit breakers for resilience, JWT propagation for security, database isolation for independent deployability, and role-based guards for compliance. I can walk through any service end-to-end from the HTTP request to the DB write and back."*
+# Leave Types & Quotas
+GET    /api/leaves/types              [All]   All leave types
+POST   /api/leaves/types              [ADMIN] Create leave type
+PUT    /api/leaves/types/{id}         [ADMIN] Update leave type
+GET    /api/leaves/quotas?year=       [ADMIN] Get all quotas
+POST   /api/leaves/quotas             [ADMIN] Create/update quota
+DELETE /api/leaves/quotas/{id}        [ADMIN] Delete quota
 
----
-
----
-
-## Troubleshooting — First-Time Setup Errors
-
-### Docker Issues
-
----
-
-#### Error: `COPY target/*.jar app.jar` — file not found / build fails immediately
-
-**Cause:** Old Dockerfiles expected a pre-built JAR. Now fixed with multi-stage builds — no manual Maven step needed.
-
-**Fix:** Pull the latest code and re-run:
-```bash
-cd E:\RevWorkforce\docker
-docker compose up --build
+# Holidays
+GET    /api/leaves/holidays           [All]   All holidays
+GET    /api/leaves/holidays/upcoming  [All]   Upcoming holidays
+POST   /api/leaves/holidays           [ADMIN] Add holiday
+PUT    /api/leaves/holidays/{id}      [ADMIN] Update holiday
+DELETE /api/leaves/holidays/{id}      [ADMIN] Delete holiday
 ```
 
----
+### Performance
 
-#### Error: `error response from daemon: ... port is already allocated`
+```
+POST /api/performance/reviews               [EMPLOYEE/MANAGER] Submit self-review
+GET  /api/performance/reviews/me            [All]     My reviews
+GET  /api/performance/reviews/team          [MANAGER] Team reviews
+PUT  /api/performance/reviews/{id}/feedback [MANAGER] Add rating + feedback
 
-**Cause:** A port (3306, 8080, 8761, etc.) is already in use on your machine.
-
-**Fix:** Find and stop the conflicting process:
-```bash
-# Windows — find what's using port 3306
-netstat -ano | findstr :3306
-taskkill /PID <pid> /F
-
-# Or change the port in docker-compose.yml (left side of "x:y")
-# e.g., change "3306:3306" to "3307:3306"
+GET  /api/performance/goals/me              [All]     My goals
+GET  /api/performance/goals/team            [MANAGER] Team goals
+POST /api/performance/goals                 [All]     Create goal
+PUT  /api/performance/goals/{id}/progress   [All]     Update progress (0–100)
+PUT  /api/performance/goals/{id}/status     [All]     Update status
 ```
 
----
+### Departments & Announcements
 
-#### Error: `error response from daemon: ... no space left on device`
-
-**Cause:** Docker has run out of disk space from old images/containers.
-
-**Fix:**
-```bash
-docker system prune -af --volumes
 ```
-> Warning: this removes all stopped containers, dangling images, and unused volumes.
-
----
-
-#### Error: Services start then immediately exit / restart loop
-
-**Cause:** Usually Config Server or Eureka is not ready when a dependent service starts.
-
-**Fix:** Wait for Eureka and Config Server to be fully healthy before other services start. Check logs:
-```bash
-docker compose logs service-discovery
-docker compose logs config-server
-```
-If they're stuck, restart just those two first:
-```bash
-docker compose up service-discovery config-server -d
-# Wait ~60 seconds, then start everything
-docker compose up -d
+GET    /api/departments                     [All]   All departments
+POST   /api/departments                     [ADMIN] Create department
+PUT    /api/departments/{id}                [ADMIN] Update department
+PUT    /api/departments/{id}/activate       [ADMIN] Activate
+PUT    /api/departments/{id}/deactivate     [ADMIN] Deactivate
+GET    /api/designations?departmentId=      [All]   Designations (optionally by dept)
+GET    /api/announcements                   [All]   All active announcements
+POST   /api/announcements                   [ADMIN] Publish announcement
+PUT    /api/announcements/{id}              [ADMIN] Update announcement
+DELETE /api/announcements/{id}              [ADMIN] Delete announcement
 ```
 
----
+### Reports (Admin/Manager only)
 
-#### Error: `Unable to connect to MySQL` / user-service keeps restarting
-
-**Cause:** MySQL container is still initializing when the service tries to connect.
-
-**Fix:** MySQL has a health check with `start_period: 30s`. If it still fails:
-```bash
-# Check MySQL is actually healthy
-docker inspect revworkforce-mysql | grep -i health
-
-# Wait until Status is "healthy", then start services
-docker compose up user-service leave-service performance-service employee-management-service -d
+```
+GET /api/reports/dashboard             Overall HR metrics
+GET /api/reports/headcount             Employee count by department
+GET /api/reports/leave-utilization     Leave usage statistics
+GET /api/reports/performance-summary   Average review scores
+GET /api/reports/goal-completion       Goal completion rates
 ```
 
----
+### Notifications
 
-#### Error: `docker compose` not found (only `docker-compose` works)
-
-**Cause:** Older Docker Desktop version uses `docker-compose` (v1) instead of `docker compose` (v2).
-
-**Fix:** Either update Docker Desktop to 4.x+, or use:
-```bash
-docker-compose up --build
 ```
-
----
-
-#### Error: Frontend shows blank page / `ERR_CONNECTION_REFUSED` on http://localhost:4200
-
-**Cause:** Frontend container started before API Gateway was ready, or Angular build failed.
-
-**Fix:**
-```bash
-# Check frontend container logs
-docker compose logs frontend
-
-# Rebuild only the frontend
-docker compose up frontend --build -d
-```
-
----
-
-#### Error: `Out of memory` / Maven build kills during `docker compose up --build`
-
-**Cause:** Docker Desktop default memory (2 GB) is too low for building 9 Spring Boot services.
-
-**Fix:** In Docker Desktop → Settings → Resources → Memory: set to **at least 6 GB**.
-
----
-
-### Local Run Issues
-
----
-
-#### Error: `Could not connect to config server` — service fails to start
-
-**Cause:** Config Server isn't running yet, or Eureka isn't up.
-
-**Fix:** Always start services in this order:
-1. MySQL
-2. `service-discovery` → wait for http://localhost:8761
-3. `config-server` → wait for http://localhost:8888
-4. Business services (user, leave, etc.)
-5. `api-gateway`
-6. Frontend
-
----
-
-#### Error: `Access denied for user 'root'@'localhost'` (MySQL)
-
-**Cause:** MySQL password mismatch. The app expects password `revworkforce@123`.
-
-**Fix:** Either reset the MySQL root password or override via env variable:
-```bash
-mvn spring-boot:run -Dspring-boot.run.jvmArguments="-DSPRING_DATASOURCE_PASSWORD=yourpassword"
-```
-
----
-
-#### Error: `Port 8081 already in use`
-
-**Cause:** Another instance of the service is already running.
-
-**Fix:**
-```bash
-# Windows
-netstat -ano | findstr :8081
-taskkill /PID <pid> /F
-```
-
----
-
-#### Error: Leave balance not found when applying leave
-
-**Cause:** Leave balances are seeded only for user IDs 1–8 (dev profile). If you registered new users (IDs 9+), they won't have balances.
-
-**Fix:** Insert balances manually or log in as one of the seeded users (employee1–5@revworkforce.com).
-
----
-
-#### Error: `No active review cycle` when creating a performance review
-
-**Cause:** Review cycles are seeded by the performance-service DataInitializer (dev profile only). If running without `dev` profile, no cycles exist.
-
-**Fix:** Ensure `SPRING_PROFILES_ACTIVE=dev` is set, or manually create a cycle via:
-```bash
-curl -X POST http://localhost:8080/api/performance/cycles \
-  -H "Authorization: Bearer <ADMIN_TOKEN>" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Q1 2026","startDate":"2026-01-01","endDate":"2026-03-31"}'
-```
-
----
-
-#### Error: Reporting dashboard shows zeros
-
-**Cause:** The reporting service calls user-service, leave-service, and performance-service via Feign. If any of those services is down or hasn't started yet, stats default to 0.
-
-**Fix:** Ensure all services are running and registered in Eureka (http://localhost:8761). Then refresh the dashboard.
-
----
-
-#### Angular: `ng: command not found`
-
-**Fix:**
-```bash
-npm install -g @angular/cli
-```
-
----
-
-#### Maven: `mvn: command not found`
-
-**Fix:** Install Maven from https://maven.apache.org/download.cgi and add to PATH, or use the Maven wrapper:
-```bash
-./mvnw spring-boot:run
+GET    /api/notifications/me           My notifications (paginated)
+GET    /api/notifications/unread-count Number of unread
+PUT    /api/notifications/{id}/read    Mark one as read
+PUT    /api/notifications/read-all     Mark all as read
+DELETE /api/notifications/{id}         Delete notification
 ```
 
 ---
@@ -838,15 +498,15 @@ npm install -g @angular/cli
 
 ```bash
 # All backend unit tests
-cd E:\RevWorkforce\backend
+cd backend
 mvn test
 
-# Specific service tests
-cd E:\RevWorkforce\backend\leave-service
+# Specific service
+cd backend/leave-service
 mvn test
 
 # Frontend unit tests
-cd E:\RevWorkforce\frontend\revworkforce-ui
+cd frontend/revworkforce-ui
 npm test
 
 # Frontend lint
@@ -855,14 +515,143 @@ npm run lint
 
 ---
 
+## Troubleshooting
+
+### Docker Issues
+
+#### `port is already allocated` when running `docker compose up`
+
+**Windows:**
+```bash
+netstat -ano | findstr :8080
+taskkill /PID <pid> /F
+```
+
+**macOS/Linux:**
+```bash
+lsof -i :8080
+kill -9 <pid>
+```
+
+Or change the host port in `docker/docker-compose.yml` (`"8090:8080"`).
+
+---
+
+#### Services restart in a loop / `Unable to connect to config server`
+
+Start infrastructure first, then the rest:
+```bash
+docker compose up service-discovery config-server mysql -d
+# Wait ~60s, then:
+docker compose up -d
+```
+
+---
+
+#### `Out of memory` / build killed mid-way
+
+Docker Desktop → Settings → Resources → Memory → **8 GB**
+
+---
+
+#### Frontend shows blank page
+
+```bash
+docker compose logs frontend
+docker compose up frontend --build -d
+```
+
+---
+
+### Local Setup Issues
+
+#### `Could not connect to config server`
+
+Always start in order: MySQL → Eureka → Config Server → business services → API Gateway → frontend.
+
+---
+
+#### `Access denied for user 'root'@'localhost'`
+
+```sql
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'revworkforce@123';
+FLUSH PRIVILEGES;
+```
+
+---
+
+#### `Unknown database 'revworkforce_users_db'`
+
+```bash
+mysql -u root -p'revworkforce@123' < docker/init.sql
+```
+
+---
+
+#### Leave balance not found when applying for leave
+
+Log in as Admin → **Leave Configuration** → **Employee Balances** tab → **Apply Quota to All**.
+
+---
+
+#### Performance reviews show no manager / `Employee #N` in team reviews
+
+Log in as Admin → **Employee Management** → edit the employee and assign a manager. The review list resolves names from the user directory — if a user has no manager assigned, team reviews may show a fallback label.
+
+---
+
+#### Reporting dashboard shows all zeros
+
+All 6 services must be registered in Eureka at **http://localhost:8761**. Refresh the dashboard after all show as `UP`.
+
+---
+
+## Future Improvements
+
+### Backend
+
+| Feature | Description |
+|---------|-------------|
+| **Kafka / RabbitMQ** | Replace synchronous Feign calls for notifications with async event-driven messaging |
+| **Redis Caching** | Cache leave balances, department lists, and user lookups |
+| **Distributed Tracing** | Add Zipkin or Jaeger to trace requests across services |
+| **API Rate Limiting** | Per-user rate limiting at the gateway using Redis |
+| **Refresh Token Rotation** | Invalidate old refresh tokens on use |
+| **Email Notifications** | Send emails on leave events via Spring Mail + SMTP |
+| **Payroll Module** | Calculate monthly payroll with leave deductions |
+| **Attendance Tracking** | Clock-in/clock-out with overtime calculation |
+
+### Frontend
+
+| Feature | Description |
+|---------|-------------|
+| **Calendar View** | Visualize leave schedules in a monthly calendar |
+| **Real-time Notifications** | Replace polling with WebSocket for instant push |
+| **Export to PDF/Excel** | Export reports and leave history |
+| **Profile Photo Upload** | Allow employees to upload profile pictures |
+| **Multi-language (i18n)** | Support for multiple languages via Angular i18n |
+| **Mobile App** | Companion React Native / Flutter app using the existing REST APIs |
+
+### Infrastructure
+
+| Feature | Description |
+|---------|-------------|
+| **Kubernetes (K8s)** | Replace Docker Compose with Helm charts for production |
+| **AWS / GCP Deployment** | Deploy to EKS or GKE with RDS managed MySQL |
+| **Monitoring Stack** | Prometheus + Grafana dashboards for service metrics |
+| **Config via Git** | Move Config Server to a Git-backed repository |
+| **SSL / HTTPS** | TLS termination at the gateway with Let's Encrypt |
+
+---
+
 ## CI/CD Pipeline
 
 GitHub Actions (`.github/workflows/ci-cd.yml`) runs on every push:
 
-1. **backend-build-test** — `mvn clean test` across all modules
-2. **frontend-build-test** — `npm ci`, `npm run build -- --configuration production`, `npm test -- --watch=false`
+1. **backend-build-test** — `mvn clean test` across all 9 modules
+2. **frontend-build-test** — `npm ci`, production build, unit tests
 3. **docker-build** (main branch only) — `docker compose build` to validate all Dockerfiles
 
 ---
 
-*Built with Spring Boot 3.2.3 · Spring Cloud 2023.0.0 · Angular 17 · MySQL 8 · Docker*
+*Built with Spring Boot 3.2.3 · Spring Cloud 2023.0.0 · Angular 17 · MySQL 8.0 · Docker*
